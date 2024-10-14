@@ -52,3 +52,33 @@ pub struct Matches {
     pub snippet: Option<Vec<i32>>,
     pub title: Option<Vec<i32>>,
 } 
+
+#[derive(Debug, Serialize, Deserialize)]
+pub struct OfficerSearchResponse {
+    pub etag: Option<String>,
+    pub items: Option<Vec<CompanyItem>>,
+    pub kind: Option<String>,
+    pub start_index: Option<i32>,
+    pub total_results: Option<i32>,
+}
+
+#[derive(Debug, Serialize, Deserialize)]
+pub struct OfficerItem {
+    pub address: Address,
+    pub address_snippet: String,
+    pub appointment_count: i32,
+    pub date_of_birth: Option<DateOfBirth>,
+    pub description: Option<String>,
+    pub description_identifier: Option<Vec<String>>,
+    pub kind: String,
+    pub links: Option<Links>,
+    pub matches: Option<Matches>,
+    pub snippet: Option<String>,
+    pub title: String,
+}
+
+#[derive(Debug, Serialize, Deserialize)]
+pub struct DateOfBirth {
+    pub month: i32,
+    pub year: i32,
+}
