@@ -51,7 +51,7 @@ pub struct Matches {
     pub address_snippet: Option<Vec<i32>>,
     pub snippet: Option<Vec<i32>>,
     pub title: Option<Vec<i32>>,
-} 
+}
 
 #[derive(Debug, Serialize, Deserialize)]
 pub struct OfficerSearchResponse {
