@@ -89,7 +89,7 @@ pub struct DateOfBirth {
 #[derive(Debug, Serialize, Deserialize)]
 pub struct OfficerListResponse {
     pub active_count: i32,
-    pub etag: String,
+    pub etag: Option<String>,
     pub items: Option<Vec<OfficerListItem>>,
     pub items_per_page: i32,
     pub kind: Option<String>,
@@ -100,56 +100,56 @@ pub struct OfficerListResponse {
 
 #[derive(Debug, Serialize, Deserialize)]
 pub struct OfficerListItem {
-    pub address: Address,
-    pub appointed_before: String,
-    pub appointed_on: NaiveDate,
-    pub contact_details: ContactDetails,
-    pub date_of_birth: DateOfBirth,
-    pub etag: String,
-    pub former_names: Vec<FormerNames>,
-    pub identification: Identification,
-    pub is_pre_1992_appointment: bool,
-    pub links: OfficerLinks,
-    pub name: String,
-    pub nationality: String,
-    pub occupation: String,
-    pub officer_role: String,
-    pub person_numer: String,
-    pub principal_office_address: PrincipalOfficerAddress,
-    pub resigned_on: NaiveDate,
-    pub responsibilities: String
+    pub address: Option<Address>,
+    pub appointed_before: Option<String>,
+    pub appointed_on: Option<NaiveDate>,
+    pub contact_details: Option<ContactDetails>,
+    pub date_of_birth: Option<DateOfBirth>,
+    pub etag: Option<String>,
+    pub former_names: Option<Vec<FormerNames>>,
+    pub identification: Option<Identification>,
+    pub is_pre_1992_appointment: Option<bool>,
+    pub links: Option<OfficerLinks>,
+    pub name: Option<String>,
+    pub nationality: Option<String>,
+    pub occupation: Option<String>,
+    pub officer_role: Option<String>,
+    pub person_numer: Option<String>,
+    pub principal_office_address: Option<PrincipalOfficerAddress>,
+    pub resigned_on: Option<NaiveDate>,
+    pub responsibilities: Option<String>
 }
 
 #[derive(Debug, Serialize, Deserialize)]
 pub struct ContactDetails {
-    contact_name: String,
+    contact_name: Option<String>,
 }
 
 #[derive(Debug, Serialize, Deserialize)]
 pub struct FormerNames {
-    forenames: String,
-    surname: String,
+    forenames: Option<String>,
+    surname: Option<String>,
 }
 
 
 #[derive(Debug, Serialize, Deserialize)]
 pub struct Identification {
-    pub identification_type: String,
-    pub legal_authority: String,
-    pub legal_form: String,
-    pub place_registered: String,
-    pub registration_number: String
+    pub identification_type: Option<String>,
+    pub legal_authority: Option<String>,
+    pub legal_form: Option<String>,
+    pub place_registered: Option<String>,
+    pub registration_number: Option<String>
 }
 
 #[derive(Debug, Serialize, Deserialize)]
 pub struct OfficerLinks {
-    pub officer: Officer,
-    pub self_: String
+    pub officer: Option<Officer>,
+    pub self_: Option<String>,
 }
 
 #[derive(Debug, Serialize, Deserialize)]
 pub struct Officer {
-    pub appointments: String,
+    pub appointments: Option<String>,
 }
 
 #[derive(Debug, Serialize, Deserialize)]
