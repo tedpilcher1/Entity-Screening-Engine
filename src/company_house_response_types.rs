@@ -1,6 +1,6 @@
 use std::ops::Add;
 
-use chrono::NaiveDate;
+use chrono::{Date, NaiveDate};
 use serde::{Deserialize, Serialize};
 
 #[derive(Debug, Serialize, Deserialize)]
@@ -163,4 +163,52 @@ pub struct PrincipalOfficerAddress {
     pub postal_code: Option<String>,
     pub premises: Option<String>,
     pub region: Option<String>,
+}
+
+#[derive(Debug, Serialize, Deserialize)]
+pub struct ShareholderList {
+    pub active_count: i32,
+    pub creased_count: i32,
+    pub items: Vec<ShareholderListItem>,
+}
+
+#[derive(Debug, Serialize, Deserialize)]
+pub struct ShareholderListItem {
+    pub address: PrincipalOfficerAddress,
+    pub ceased: Option<bool>,
+    pub ceased_on: Option<NaiveDate>,
+    pub country_of_residence: Option<String>,
+    pub date_of_birth: Option<DateOfBirth>,
+    pub description: Option<String>,
+    pub etag: Option<String>,
+    pub identification: Option<ShareholderID>,
+    pub is_sanctioned_bool: Option<bool>,
+    pub kind: Option<String>,
+    pub links: Option<ShareholderLinks>,
+    pub name: Option<String>,
+    pub name_elements: Option<NameElements>,
+
+}   
+
+#[derive(Debug, Serialize, Deserialize)]
+pub struct ShareholderID {
+    pub country_registered: Option<String>,
+    pub legal_authority: Option<String>,
+    pub legal_form: Option<String>,
+    pub place_registered: Option<String>,
+    pub registration_number: Option<String>,
+}
+
+#[derive(Debug, Serialize, Deserialize)]
+pub struct ShareholderLinks {
+    pub self_: Option<String>,
+    pub statement: Option<String>,
+}
+
+#[derive(Debug, Serialize, Deserialize)]
+pub struct NameElements {
+    pub forename: Option<String>,
+    pub middle_name: Option<String>,
+    pub surname: Option<String>,
+    pub title: Option<String>,
 }
