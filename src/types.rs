@@ -1,5 +1,1 @@
-
-pub struct Officer {
-
-        
-}
+pub struct Officer {}

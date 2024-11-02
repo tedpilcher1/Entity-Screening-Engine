@@ -117,7 +117,7 @@ pub struct OfficerListItem {
     pub person_numer: Option<String>,
     pub principal_office_address: Option<PrincipalOfficerAddress>,
     pub resigned_on: Option<NaiveDate>,
-    pub responsibilities: Option<String>
+    pub responsibilities: Option<String>,
 }
 
 #[derive(Debug, Serialize, Deserialize)]
@@ -131,14 +131,13 @@ pub struct FormerNames {
     surname: Option<String>,
 }
 
-
 #[derive(Debug, Serialize, Deserialize)]
 pub struct Identification {
     pub identification_type: Option<String>,
     pub legal_authority: Option<String>,
     pub legal_form: Option<String>,
     pub place_registered: Option<String>,
-    pub registration_number: Option<String>
+    pub registration_number: Option<String>,
 }
 
 #[derive(Debug, Serialize, Deserialize)]
@@ -167,9 +166,13 @@ pub struct PrincipalOfficerAddress {
 
 #[derive(Debug, Serialize, Deserialize)]
 pub struct ShareholderList {
-    pub active_count: i32,
-    pub creased_count: i32,
+    pub active_count: Option<i32>,
+    pub creased_count: Option<i32>,
     pub items: Vec<ShareholderListItem>,
+    pub items_per_page: Option<i32>,
+    pub links: Option<ShareholderListLinks>,
+    pub start_index: Option<i32>,
+    pub total_result: Option<i32>,
 }
 
 #[derive(Debug, Serialize, Deserialize)]
@@ -187,8 +190,11 @@ pub struct ShareholderListItem {
     pub links: Option<ShareholderLinks>,
     pub name: Option<String>,
     pub name_elements: Option<NameElements>,
-
-}   
+    pub nationality: Option<String>,
+    pub nature_of_control: Option<Vec<String>>,
+    pub notified_on: Option<NaiveDate>,
+    pub principal_office_address: Option<PrincipalOfficerAddress>,
+}
 
 #[derive(Debug, Serialize, Deserialize)]
 pub struct ShareholderID {
@@ -211,4 +217,10 @@ pub struct NameElements {
     pub middle_name: Option<String>,
     pub surname: Option<String>,
     pub title: Option<String>,
+}
+
+#[derive(Debug, Serialize, Deserialize)]
+pub struct ShareholderListLinks {
+    persons_with_significant_control_list: Option<String>,
+    self_: Option<String>,
 }

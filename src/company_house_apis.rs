@@ -1,7 +1,9 @@
 use reqwest::{self, header, Client};
 use std::collections::HashMap;
 
-use crate::company_house_response_types::{CompanySearchResponse, OfficerListResponse};
+use crate::company_house_response_types::{
+    CompanySearchResponse, OfficerListResponse, ShareholderList,
+};
 
 const COMPANY_SEARCH_URL: &str = "https://api.company-information.service.gov.uk/search/companies";
 
@@ -29,10 +31,15 @@ pub async fn get_company(api_key: &String, name: &String) {
     // some work required here to convert the search response into some generic company struct
 }
 
-pub async fn get_company_officers(api_key: &String, company_number: &String) -> OfficerListResponse {
-
+pub async fn get_company_officers(
+    api_key: &String,
+    company_number: &String,
+) -> OfficerListResponse {
     // TODO: urls should be lazy-loaded
-    let url = format!("https://api.company-information.service.gov.uk/company/{}/officers", company_number);
+    let url = format!(
+        "https://api.company-information.service.gov.uk/company/{}/officers",
+        company_number
+    );
     let client = Client::new();
 
     let mut params = HashMap::new();
@@ -59,11 +66,13 @@ pub async fn get_company_officers(api_key: &String, company_number: &String) -> 
 }
 
 // TODO: Stop passing around api_key it's a bit dumb
-pub async fn get_company_shareholders(api_key: &String, company_number: &String){
-
+pub async fn get_company_shareholders(
+    api_key: &String,
+    company_number: &String,
+) -> ShareholderList {
     let url = format!("https://api.company-information.service.gov.uk/company/{}/persons-with-significant-control", company_number);
     // TODO: create own client struct that implements fns in this file, has client as field
-    // I'm actually not sure if this is a good idea? - should check what we do in bridge for inspiration! 
+    // I'm actually not sure if this is a good idea? - should check what we do in bridge for inspiration!
     let client = Client::new();
 
     // TODO: could stop duplication and do this once somewhere
@@ -72,11 +81,9 @@ pub async fn get_company_shareholders(api_key: &String, company_number: &String)
         "Authorization",
         header::HeaderValue::from_str(&format!("{}", api_key)).unwrap(),
     );
-    
-    let response = client
-        .get(url)
-        .headers(headers)
-        .send()
-        .await
-        .unwrap();
+
+    let response = client.get(url).headers(headers).send().await.unwrap();
+
+    let shareholder_list: ShareholderList = response.json().await.unwrap();
+    shareholder_list
 }
