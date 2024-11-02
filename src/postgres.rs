@@ -6,7 +6,7 @@ use sqlx::query;
 pub async fn init_db(conn: &mut PgConnection) -> Result<(), failure::Error> {
 
     // TODO: refactor this into single transaction
-    sqlx::query(
+    query(
         r#"
         CREATE TABLE IF NOT EXISTS company (
             id UUID PRIMARY KEY UNIQUE,
@@ -17,11 +17,11 @@ pub async fn init_db(conn: &mut PgConnection) -> Result<(), failure::Error> {
     .execute(&mut *conn)
     .await?;
 
-    sqlx::query(
+    query(
         r#"
         CREATE TABLE IF NOT EXISTS shareholder (
-            parent_id UUID  NOT NULL,
-            child_id UUID  NOT NULL,
+            parent_id UUID NOT NULL,
+            child_id UUID NOT NULL,
             PRIMARY KEY(parent_id, child_id)
         )
         "#
@@ -46,4 +46,17 @@ pub async fn insert_company(conn: &mut PgConnection, company_house_id: &String) 
     .await?;
 
     Ok(id)
+}
+
+pub async fn insert_shareholder(conn: &mut PgConnection, parent_id: Uuid, child_id: Uuid) -> Result<(), failure::Error> {
+
+    query(
+        "INSERT INTO shareholder (parent_id, child_id) VALUES ($1, $2)"
+    )
+    .bind(parent_id)
+    .bind(child_id)
+    .execute(conn)
+    .await?;
+
+    Ok(())
 }
