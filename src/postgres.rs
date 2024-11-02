@@ -1,7 +1,6 @@
-use sqlx::{postgres::{PgConnectOptions, PgSslMode}, Connection, PgConnection, Pool};
+use sqlx::postgres::PgConnection;
 use uuid::Uuid;
 
-// pub async fn init_db(pool: &Pool<Postgres>) -> Result<()> {
 pub async fn init_db(conn: &mut PgConnection) -> Result<(), failure::Error> {
 
     sqlx::query(
