@@ -1,11 +1,15 @@
 use sqlx::postgres::PgConnection;
 use uuid::Uuid;
-use sqlx::query;
+use sqlx::{query, Acquire};
 
 
 pub async fn init_db(conn: &mut PgConnection) -> Result<(), failure::Error> {
+    
+    // TODO: Need to link id as foreign key to both
+    // parent_id and child_id in shareholer
+    let mut transaction = conn.begin().await?;
 
-    // TODO: refactor this into single transaction
+    // Execute the first CREATE TABLE statement
     query(
         r#"
         CREATE TABLE IF NOT EXISTS company (
@@ -14,9 +18,10 @@ pub async fn init_db(conn: &mut PgConnection) -> Result<(), failure::Error> {
         )
         "#
     )
-    .execute(&mut *conn)
+    .execute(&mut *transaction)
     .await?;
 
+    // Execute the second CREATE TABLE statement
     query(
         r#"
         CREATE TABLE IF NOT EXISTS shareholder (
@@ -26,8 +31,11 @@ pub async fn init_db(conn: &mut PgConnection) -> Result<(), failure::Error> {
         )
         "#
     )
-    .execute(conn)
+    .execute(&mut *transaction)
     .await?;
+
+    // Commit the transaction if both statements succeed
+    transaction.commit().await?;
 
     Ok(())
 }
