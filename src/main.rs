@@ -1,28 +1,45 @@
-use company_house_apis::{get_company_officers, get_company_shareholders};
-use dotenv::var;
+use ::pulsar::producer;
+use pulsar::{get_consumer, get_producer, get_pulsar_client};
+use tokio::{signal, time::{self, Interval}};
+use workers::{test_generate_messages_worker, worker};
 
 pub mod company_house_apis;
 mod company_house_response_types;
 mod jobs;
+mod postgres;
+mod pulsar;
 pub mod types;
+mod workers;
+
+const NUM_WORKERS: usize = 2;
+const TEST_PRODUCER_WORKERS: usize = 1;
 
 #[tokio::main]
 async fn main() {
-    let api_key = var("COMPANY_HOUSE_API_KEY_TEST").unwrap();
+    let pulsar_client = get_pulsar_client().await;
+    let mut workers = Vec::new();
 
-    let company_number: String = "03977902".to_string();
-    // let officer_search_response = get_company_officers(&api_key, &company_number).await;
+    for _ in 0..NUM_WORKERS {
+        let consumer = get_consumer(&pulsar_client).await;
+        let handle = tokio::spawn(async move {
+            worker(consumer).await.unwrap();
+        });
+        workers.push(handle);
+    }
 
-    // // need method to determine if OfficerItem is company or individual
+    for _ in 0..TEST_PRODUCER_WORKERS {
+        let producer = get_producer(&pulsar_client).await;
+        let handle = tokio::spawn(async move {
+            test_generate_messages_worker(producer, time::interval(time::Duration::from_secs(1))).await.unwrap();
+        });
+        workers.push(handle);
+    }
 
-    // // for each company officer
-    // for item in officer_search_response.items.unwrap() {
+    signal::ctrl_c()
+        .await
+        .expect("Should be able to listen for kill signal");
 
-    //     println!("{:?}", item)
-    // }
-    let shareholder_list = get_company_shareholders(&api_key, &company_number).await;
-
-    for item in shareholder_list.items {
-        println!("{:?}", item);
+    for worker in workers {
+        let _ = worker.abort();
     }
 }
