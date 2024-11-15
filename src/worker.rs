@@ -1,7 +1,7 @@
 use futures::TryStreamExt;
 use uuid::Uuid;
 
-use crate::{jobs::{Job, TestJob}, postgres::Database, pulsar::{PulsarClient, PulsarConsumer, PulsarProducer}};
+use crate::{jobs::Job, postgres::Database, pulsar::{PulsarClient, PulsarConsumer, PulsarProducer}};
 
 pub struct Worker {
     id: Uuid,
