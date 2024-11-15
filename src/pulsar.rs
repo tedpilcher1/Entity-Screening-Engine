@@ -1,15 +1,9 @@
 use pulsar::{producer, proto, Consumer, DeserializeMessage, Error as PulsarError, Payload, Producer, Pulsar, SerializeMessage, SubType, TokioExecutor};
-use serde::{Deserialize, Serialize};
 use uuid::Uuid;
 
+use crate::jobs::Job;
+
 const PULSAR_ADDR: &str = "pulsar://localhost:6650";
-
-#[derive(Serialize, Deserialize, Debug)]
-pub struct CompanyId {
-    company_id: Uuid,
-    company_house_id: String,
-}
-
 pub struct PulsarClient {
     internal_client: Pulsar<TokioExecutor>,
 }
@@ -67,15 +61,13 @@ pub struct PulsarProducer {
 impl PulsarProducer {
     pub async fn produce_message(
         &mut self,
-        company_id: Uuid,
-        company_house_id: String,
     ) -> Result<(), failure::Error> {
-        self.internal_producer
-            .send(CompanyId {
-                company_id,
-                company_house_id,
-            })
-            .await?;
+        // self.internal_producer
+        //     .send(CompanyId {
+        //         company_id,
+        //         company_house_id,
+        //     })
+        //     .await?;
     
         Ok(())
     }
@@ -83,23 +75,5 @@ impl PulsarProducer {
 
 pub struct PulsarConsumer {
     id: Uuid,
-    internal_consumer: Consumer<CompanyId, TokioExecutor>
-}
-
-impl SerializeMessage for CompanyId {
-    fn serialize_message(input: Self) -> Result<producer::Message, PulsarError> {
-        let payload = serde_json::to_vec(&input).map_err(|e| PulsarError::Custom(e.to_string()))?;
-        Ok(producer::Message {
-            payload,
-            ..Default::default()
-        })
-    }
-}
-
-impl DeserializeMessage for CompanyId {
-    type Output = Result<CompanyId, serde_json::Error>;
-
-    fn deserialize_message(payload: &Payload) -> Self::Output {
-        serde_json::from_slice(&payload.data)
-    }
+    internal_consumer: Consumer<Job, TokioExecutor>
 }
