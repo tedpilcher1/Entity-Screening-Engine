@@ -8,7 +8,6 @@ use crate::{
 };
 
 pub struct Worker {
-    id: Uuid,
     database: Database,
     producer: PulsarProducer,
     consumer: PulsarConsumer,
@@ -19,7 +18,6 @@ impl Worker {
         let pulsar_client = PulsarClient::new().await;
 
         Ok(Self {
-            id: Uuid::new_v4(),
             database: Database::connect().await?,
             producer: pulsar_client.create_producer().await,
             consumer: pulsar_client.create_consumer().await,
