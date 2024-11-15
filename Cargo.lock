@@ -12,6 +12,7 @@ dependencies = [
  "env_logger",
  "failure",
  "futures",
+ "lazy_static",
  "log",
  "pulsar",
  "reqwest 0.12.8",

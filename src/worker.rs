@@ -37,16 +37,23 @@ impl Worker {
             };
 
             let job_result = match job {
-                Job::TestJob(test_job) => test_job.do_job(),
+                Job::RecursiveShareholders(job) => {
+                    job.do_job(&mut self.database, &mut self.producer).await
+                }
             };
 
             match job_result {
                 // log + metrics
-                Ok(_) => todo!(),
-                Err(_) => todo!(),
+                Ok(_) => {}
+                Err(_) => {}
+            }
+
+            // acknowledge message once processing completed
+            match self.consumer.internal_consumer.ack(&msg).await {
+                Ok(_) => {}
+                Err(_) => {} // TODO: log and move on, potentially retry x times then give up
             }
         }
-
         Ok(())
     }
 }

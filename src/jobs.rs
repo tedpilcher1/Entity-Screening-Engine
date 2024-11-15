@@ -1,10 +1,15 @@
 use pulsar::{producer, DeserializeMessage, Error as PulsarError, SerializeMessage};
 use serde::{Deserialize, Serialize};
+use sqlx::database;
 use uuid::Uuid;
+
+use crate::{
+    company_house_apis::get_company_shareholders, postgres::Database, pulsar::PulsarProducer,
+};
 
 #[derive(Serialize, Deserialize, Debug)]
 pub enum Job {
-    TestJob(TestJob),
+    RecursiveShareholders(RecursiveShareholders),
 }
 
 impl SerializeMessage for Job {
@@ -26,12 +31,39 @@ impl DeserializeMessage for Job {
 }
 
 #[derive(Serialize, Deserialize, Debug)]
-pub struct TestJob {
+pub struct RecursiveShareholders {
     id: Uuid,
+    parent_company_id: Uuid,
 }
 
-impl TestJob {
-    pub fn do_job(&self) -> Result<(), failure::Error> {
-        todo!()
+impl RecursiveShareholders {
+    pub async fn do_job(
+        &self,
+        database: &mut Database,
+        producer: &mut PulsarProducer,
+    ) -> Result<(), failure::Error> {
+        // get shareholders for parent_company_id
+        // for each shareholder
+        // -- store in db
+        // -- produce message
+
+        let shareholders_list = get_company_shareholders(&self.parent_company_id).await?;
+
+        for shareholder in shareholders_list.items {
+            let shareholder_company_id = shareholder
+                .identification
+                .unwrap()
+                .registration_number
+                .unwrap();
+            database.insert_company(&shareholder_company_id).await?;
+
+            let job = Job::RecursiveShareholders(RecursiveShareholders {
+                id: Uuid::new_v4(),
+                parent_company_id: self.parent_company_id,
+            });
+
+            producer.produce_message(job).await?;
+        }
+        Ok(())
     }
 }

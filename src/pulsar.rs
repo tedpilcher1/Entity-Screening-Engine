@@ -65,14 +65,8 @@ pub struct PulsarProducer {
 }
 
 impl PulsarProducer {
-    pub async fn produce_message(&mut self) -> Result<(), failure::Error> {
-        // self.internal_producer
-        //     .send(CompanyId {
-        //         company_id,
-        //         company_house_id,
-        //     })
-        //     .await?;
-
+    pub async fn produce_message(&mut self, job: Job) -> Result<(), failure::Error> {
+        self.internal_producer.send(job).await?;
         Ok(())
     }
 }
