@@ -23,13 +23,13 @@ impl Worker {
             consumer: pulsar_client.create_consumer().await,
         })
     }
-
+    // TODO: negative ack
     pub async fn do_work(&mut self) -> Result<(), failure::Error> {
         while let Some(msg) = self.consumer.internal_consumer.try_next().await? {
             let job = match msg.deserialize() {
                 Ok(data) => data,
                 Err(e) => {
-                    // log::error!("could not deserialize message: {:?}", e);
+                    // TODO log error
                     todo!()
                 }
             };
@@ -41,7 +41,7 @@ impl Worker {
             };
 
             match job_result {
-                // log + metrics
+                // TODO: log + metrics
                 Ok(_) => {}
                 Err(_) => {}
             }
