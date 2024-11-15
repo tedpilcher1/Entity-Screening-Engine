@@ -1,4 +1,4 @@
-# Company-Investigation
+# Screening Engine
 
 
 ## Requirements to run
