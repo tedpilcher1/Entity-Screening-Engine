@@ -31,7 +31,7 @@ pub struct TestJob {
 }
 
 impl TestJob {
-    pub fn do_work() -> Result<(), failure::Error>{
+    pub fn do_job(&self) -> Result<(), failure::Error>{
         todo!()
     }
 }

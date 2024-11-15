@@ -1,6 +1,7 @@
+use futures::TryStreamExt;
 use uuid::Uuid;
 
-use crate::{postgres::Database, pulsar::{PulsarClient, PulsarConsumer, PulsarProducer}};
+use crate::{jobs::{Job, TestJob}, postgres::Database, pulsar::{PulsarClient, PulsarConsumer, PulsarProducer}};
 
 pub struct Worker {
     id: Uuid,
@@ -22,10 +23,28 @@ impl Worker {
         })
     } 
 
-    pub fn do_work() {
+    pub async fn do_work(&mut self) -> Result<(), failure::Error> {
 
-        // wait for 
+        while let Some(msg) = self.consumer.internal_consumer.try_next().await? {
 
+            let job = match msg.deserialize() {
+                Ok(data) => data,
+                Err(e) => {
+                    // log::error!("could not deserialize message: {:?}", e);
+                    todo!()
+                }
+            };   
 
+            let job_result = match job {
+               Job::TestJob(test_job) => test_job.do_job(),
+            };
+
+            match job_result { // log + metrics
+                Ok(_) => todo!(), 
+                Err(_) => todo!(), 
+            }
+        }
+
+        Ok(())
     }
 }

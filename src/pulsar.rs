@@ -5,7 +5,7 @@ use crate::jobs::Job;
 
 const PULSAR_ADDR: &str = "pulsar://localhost:6650";
 pub struct PulsarClient {
-    internal_client: Pulsar<TokioExecutor>,
+    pub internal_client: Pulsar<TokioExecutor>,
 }
 
 impl PulsarClient {
@@ -54,8 +54,8 @@ impl PulsarClient {
 }
 
 pub struct PulsarProducer {
-    id: Uuid,
-    internal_producer: Producer<TokioExecutor>,
+    pub id: Uuid,
+    pub internal_producer: Producer<TokioExecutor>,
 }
 
 impl PulsarProducer {
@@ -74,6 +74,6 @@ impl PulsarProducer {
 }
 
 pub struct PulsarConsumer {
-    id: Uuid,
-    internal_consumer: Consumer<Job, TokioExecutor>
+    pub id: Uuid,
+    pub internal_consumer: Consumer<Job, TokioExecutor>
 }
