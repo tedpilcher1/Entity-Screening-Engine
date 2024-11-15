@@ -23,7 +23,6 @@ impl PulsarClient {
 
     pub async fn create_producer(&self) -> PulsarProducer {
         PulsarProducer {
-            id: Uuid::new_v4(),
             internal_producer: self
                 .internal_client
                 .producer()
@@ -44,7 +43,6 @@ impl PulsarClient {
 
     pub async fn create_consumer(&self) -> PulsarConsumer {
         PulsarConsumer {
-            id: Uuid::new_v4(),
             internal_consumer: self
                 .internal_client
                 .consumer()
@@ -60,7 +58,6 @@ impl PulsarClient {
 }
 
 pub struct PulsarProducer {
-    pub id: Uuid,
     pub internal_producer: Producer<TokioExecutor>,
 }
 
@@ -72,6 +69,5 @@ impl PulsarProducer {
 }
 
 pub struct PulsarConsumer {
-    pub id: Uuid,
     pub internal_consumer: Consumer<Job, TokioExecutor>,
 }

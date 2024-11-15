@@ -1,6 +1,5 @@
 use pulsar::{producer, DeserializeMessage, Error as PulsarError, SerializeMessage};
 use serde::{Deserialize, Serialize};
-use sqlx::database;
 use uuid::Uuid;
 
 use crate::{
