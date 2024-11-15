@@ -22,12 +22,14 @@ impl PulsarClient {
     }
 
     pub async fn create_producer(&self) -> PulsarProducer {
+        let id  = Uuid::new_v4();
         PulsarProducer {
+            id,
             internal_producer: self
                 .internal_client
                 .producer()
                 .with_topic("non-persistent://public/default/test")
-                .with_name("producer")
+                .with_name(id.to_string())
                 .with_options(producer::ProducerOptions {
                     schema: Some(proto::Schema {
                         r#type: proto::schema::Type::String as i32,
@@ -42,12 +44,14 @@ impl PulsarClient {
     }
 
     pub async fn create_consumer(&self) -> PulsarConsumer {
+        let id  = Uuid::new_v4();
         PulsarConsumer {
+            id,
             internal_consumer: self
                 .internal_client
                 .consumer()
                 .with_topic("non-persistent://public/default/test")
-                .with_consumer_name("consumer")
+                .with_consumer_name(id.to_string())
                 .with_subscription_type(SubType::Shared)
                 .with_subscription("test_subscription")
                 .build()
@@ -58,6 +62,7 @@ impl PulsarClient {
 }
 
 pub struct PulsarProducer {
+    pub id: Uuid,
     pub internal_producer: Producer<TokioExecutor>,
 }
 
@@ -69,5 +74,6 @@ impl PulsarProducer {
 }
 
 pub struct PulsarConsumer {
+    pub id: Uuid,
     pub internal_consumer: Consumer<Job, TokioExecutor>,
 }
