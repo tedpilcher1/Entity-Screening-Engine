@@ -18,7 +18,7 @@ impl Database {
     }
 
     async fn init_db(&mut self) -> Result<(), failure::Error> {
-          // TODO: Need to link id as foreign key to both
+        // TODO: Need to link id as foreign key to both
         // parent_id and child_id in shareholer
         let mut transaction = self.conn.begin().await?;
 
@@ -58,13 +58,13 @@ impl Database {
         company_house_id: &String,
     ) -> Result<Uuid, failure::Error> {
         let id: Uuid = Uuid::new_v4();
-    
+
         query("INSERT INTO company (id, company_house_id) VALUES ($1, $2)")
             .bind(id) // Bind the UUID to the first placeholder ($1)
             .bind(company_house_id) // Bind the name to the second placeholder ($2)
             .execute(&mut self.conn)
             .await?;
-    
+
         Ok(id)
     }
 
@@ -78,11 +78,7 @@ impl Database {
             .bind(child_id)
             .execute(&mut self.conn)
             .await?;
-    
+
         Ok(())
     }
 }
-
-
-
-
