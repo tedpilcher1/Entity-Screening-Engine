@@ -12,3 +12,10 @@
 apachepulsar/pulsar:4.0.0 \
 bin/pulsar standalone`
 - Postgres running
+
+- Pulsar GUI:
+`docker pull apachepulsar/pulsar-manager:latest
+docker run -it \
+  -p 9527:9527 -p 7750:7750 \
+  -e SPRING_CONFIGURATION_FILE=/pulsar-manager/pulsar-manager/application.properties \
+  apachepulsar/pulsar-manager:latest`
