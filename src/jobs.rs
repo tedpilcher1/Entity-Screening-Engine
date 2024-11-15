@@ -32,6 +32,7 @@ impl DeserializeMessage for Job {
 #[derive(Serialize, Deserialize, Debug)]
 pub struct RecursiveShareholders {
     parent_company_id: Uuid,
+    remaining_depth: i32,
 }
 
 impl RecursiveShareholders {
@@ -55,11 +56,14 @@ impl RecursiveShareholders {
                 .unwrap();
             database.insert_company(&shareholder_company_id).await?;
 
-            let job = Job::RecursiveShareholders(RecursiveShareholders {
-                parent_company_id: self.parent_company_id,
-            });
-
-            producer.produce_message(job).await?;
+            if self.remaining_depth > 0 {
+                let job = Job::RecursiveShareholders(RecursiveShareholders {
+                    parent_company_id: self.parent_company_id,
+                    remaining_depth: self.remaining_depth - 1,
+                });
+    
+                producer.produce_message(job).await?;
+            }
         }
         Ok(())
     }
