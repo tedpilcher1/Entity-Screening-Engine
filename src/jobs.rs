@@ -31,8 +31,8 @@ impl DeserializeMessage for Job {
 
 #[derive(Serialize, Deserialize, Debug)]
 pub struct RecursiveShareholders {
-    parent_company_id: Uuid,
-    remaining_depth: i32,
+    pub parent_company_id: String,
+    pub remaining_depth: i32,
 }
 
 impl RecursiveShareholders {
@@ -58,7 +58,7 @@ impl RecursiveShareholders {
 
             if self.remaining_depth > 0 {
                 let job = Job::RecursiveShareholders(RecursiveShareholders {
-                    parent_company_id: self.parent_company_id,
+                    parent_company_id: self.parent_company_id.clone(),
                     remaining_depth: self.remaining_depth - 1,
                 });
     
