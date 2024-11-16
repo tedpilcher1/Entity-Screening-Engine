@@ -1,10 +1,10 @@
 use Company_Investigation::{
-    jobs::{Job, RecursiveShareholders}, postgres::Database, pulsar::PulsarClient
+    jobs::{Job, RecursiveShareholders},
+    postgres::Database,
+    pulsar::PulsarClient,
 };
 
-
 async fn simulate_find_shareholders_endpoint() {
-
     let company_id = "02627406".to_string();
     let depth = 3;
 
@@ -13,7 +13,10 @@ async fn simulate_find_shareholders_endpoint() {
 
     let mut conn = Database::connect().await.unwrap();
 
-    let parent_id = conn.insert_company(&company_id, None, None, None, None, true).await.unwrap();
+    let parent_id = conn
+        .insert_company(&company_id, None, None, None, None, true)
+        .await
+        .unwrap();
 
     let job = Job::RecursiveShareholders(RecursiveShareholders {
         parent_id,

@@ -1,5 +1,5 @@
-use Company_Investigation::worker::Worker;
 use dotenv::dotenv;
+use Company_Investigation::worker::Worker;
 
 #[tokio::main]
 async fn main() {

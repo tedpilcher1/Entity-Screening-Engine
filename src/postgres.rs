@@ -1,5 +1,6 @@
+use serde::{Deserialize, Serialize};
 use sqlx::postgres::PgConnection;
-use sqlx::{query, Connection};
+use sqlx::{query, Connection, FromRow};
 use uuid::Uuid;
 
 const DB_URL: &str = "postgres://localhost/postgres";
@@ -32,7 +33,7 @@ impl Database {
                 kind TEXT,
                 country TEXT,
                 postal_code TEXT,
-                is_root: BOOLEAN NON NULL
+                is_root BOOLEAN NOT NULL
             )
             "#,
         )
@@ -97,11 +98,38 @@ impl Database {
         Ok(())
     }
 
-    pub async fn get_recursive_shareholders(
-        &mut self,
-        parent_id: Uuid,
-        depth: i32,
-    ) -> Result<(), failure::Error> {
-        todo!()
+    pub async fn get_shareholders(&mut self, root_company_id: &Uuid) -> Result<Vec<CompanyDetails>, failure::Error> {
+        let query = r#"
+            SELECT 
+                c.id AS company_id,
+                c.company_house_id AS company_house_id,
+                c.name AS company_name,
+                c.kind as company_kind,
+                c.country as company_country,
+                c.postal_code as company_postal_code
+            FROM 
+                shareholder sh
+            INNER JOIN 
+                company c ON sh.child_id = c.id
+            WHERE 
+                sh.parent_id = $1;
+        "#;
+
+        let shareholders: Vec<CompanyDetails> = sqlx::query_as::<_, CompanyDetails>(query)
+            .bind(root_company_id)
+            .fetch_all(&mut self.conn)
+            .await?;
+
+        Ok(shareholders)
     }
+}
+
+#[derive(Debug, FromRow, Serialize, Deserialize)]
+pub struct CompanyDetails {
+    pub company_id: Uuid,
+    pub company_house_id: String,
+    pub company_name: Option<String>,
+    pub company_kind: Option<String>,
+    pub company_country: Option<String>,
+    pub company_postal_code: Option<String>,
 }
