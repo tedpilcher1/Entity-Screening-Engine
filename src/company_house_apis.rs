@@ -69,7 +69,7 @@ pub async fn get_company_officers(company_number: &String) -> OfficerListRespons
 }
 
 pub async fn get_company_shareholders(
-    company_number: &Uuid,
+    company_number: &String,
 ) -> Result<ShareholderList, failure::Error> {
     let url = format!("{} {}", COMPANY_SHAREHOLDERS_URL, company_number);
     // TODO: create own client struct that implements fns in this file, has client as field
