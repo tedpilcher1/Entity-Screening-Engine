@@ -67,7 +67,7 @@ impl RecursiveShareholders {
                 None => (None, None),
             };
 
-            let child_id = database.insert_company(&shareholder_registration_number, shareholder.name, shareholder.kind, country, postal_code).await?;
+            let child_id = database.insert_company(&shareholder_registration_number, shareholder.name, shareholder.kind, country, postal_code, false).await?;
             database.insert_shareholder(self.parent_id, child_id).await?;
 
             if self.remaining_depth > 0 {
