@@ -81,4 +81,12 @@ impl Database {
 
         Ok(())
     }
+
+    pub async fn get_recursive_shareholders(
+        &mut self,
+        parent_id: Uuid,
+        depth: i32,
+    ) -> Result<(), failure::Error> {
+        todo!()
+    }
 }

@@ -1,5 +1,4 @@
 use futures::TryStreamExt;
-use uuid::Uuid;
 
 use crate::{
     jobs::Job,
@@ -26,13 +25,22 @@ impl Worker {
     // TODO: negative ack
     pub async fn do_work(&mut self) -> Result<(), failure::Error> {
         while let Some(msg) = self.consumer.internal_consumer.try_next().await? {
+            // acknowledge message once processing completed
+            match self.consumer.internal_consumer.ack(&msg).await {
+                Ok(_) => {}
+                Err(_) => {} // TODO: log and move on, potentially retry x times then give up
+            }
+
             let job = match msg.deserialize() {
                 Ok(data) => data,
                 Err(e) => {
                     // TODO log error
+                    println!("ERROR deseralizing");
                     todo!()
                 }
             };
+
+            println!("{:?}", job);
 
             let job_result = match job {
                 Job::RecursiveShareholders(job) => {
@@ -44,12 +52,6 @@ impl Worker {
                 // TODO: log + metrics
                 Ok(_) => {}
                 Err(_) => {}
-            }
-
-            // acknowledge message once processing completed
-            match self.consumer.internal_consumer.ack(&msg).await {
-                Ok(_) => {}
-                Err(_) => {} // TODO: log and move on, potentially retry x times then give up
             }
         }
         Ok(())

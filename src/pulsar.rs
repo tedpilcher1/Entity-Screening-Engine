@@ -1,14 +1,10 @@
-use pulsar::{
-    producer, proto, Consumer, Producer, Pulsar,
-    SubType, TokioExecutor,
-};
-use serde_json::json;
+use pulsar::{producer, proto, Consumer, Producer, Pulsar, SubType, TokioExecutor};
 use uuid::Uuid;
 
 use crate::jobs::Job;
 
 const PULSAR_ADDR: &str = "pulsar://localhost:6650";
-const TOPIC: &str = "persistent://public/default/screening-engine-topic";
+const TOPIC: &str = "non-persistent://public/default/testing";
 
 pub struct PulsarClient {
     pub internal_client: Pulsar<TokioExecutor>,
@@ -25,10 +21,7 @@ impl PulsarClient {
     }
 
     pub async fn create_producer(&self) -> PulsarProducer {
-        let id  = Uuid::new_v4();
-
-        let job_json = json!(Job::RecursiveShareholders);
-
+        let id = Uuid::new_v4();
         PulsarProducer {
             id,
             internal_producer: self
@@ -38,7 +31,7 @@ impl PulsarClient {
                 .with_name("PRODUCER_".to_owned() + &id.to_string())
                 .with_options(producer::ProducerOptions {
                     schema: Some(proto::Schema {
-                        r#type: proto::schema::Type::Json as i32,  // Or appropriate type for Job
+                        r#type: proto::schema::Type::String as i32, // Or appropriate type for Job
                         ..Default::default()
                     }),
                     ..Default::default()
@@ -50,7 +43,7 @@ impl PulsarClient {
     }
 
     pub async fn create_consumer(&self) -> PulsarConsumer {
-        let id  = Uuid::new_v4();
+        let id = Uuid::new_v4();
         PulsarConsumer {
             id,
             internal_consumer: self
@@ -59,7 +52,8 @@ impl PulsarClient {
                 .with_topic(TOPIC)
                 .with_consumer_name("CONSUMER_".to_owned() + &id.to_string())
                 .with_subscription_type(SubType::Exclusive) // exclusive for current testing
-                .with_subscription("SUB_".to_owned() + &id.to_string())
+                // .with_subscription("SUB_".to_owned() + &id.to_string())
+                .with_subscription("test-sub")
                 .build()
                 .await
                 .expect("Should be able to create consumer"),
@@ -74,7 +68,6 @@ pub struct PulsarProducer {
 
 impl PulsarProducer {
     pub async fn produce_message(&mut self, job: Job) -> Result<(), failure::Error> {
-        // let job_json = serde_json::to_
         self.internal_producer.send(job).await?;
         Ok(())
     }

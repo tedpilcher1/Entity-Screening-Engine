@@ -31,6 +31,7 @@ impl DeserializeMessage for Job {
 
 #[derive(Serialize, Deserialize, Debug)]
 pub struct RecursiveShareholders {
+    pub parent_id: Uuid,
     pub parent_company_id: String,
     pub remaining_depth: i32,
 }
@@ -48,20 +49,23 @@ impl RecursiveShareholders {
 
         let shareholders_list = get_company_shareholders(&self.parent_company_id).await?;
 
-        for shareholder in shareholders_list.items {
+        // TODO: fix unwrap - but this should really never fail
+        for shareholder in shareholders_list.items.unwrap() {
             let shareholder_company_id = shareholder
                 .identification
                 .unwrap()
                 .registration_number
                 .unwrap();
-            database.insert_company(&shareholder_company_id).await?;
+            let child_id = database.insert_company(&shareholder_company_id).await?;
+            database.insert_shareholder(self.parent_id, child_id).await?;
 
             if self.remaining_depth > 0 {
                 let job = Job::RecursiveShareholders(RecursiveShareholders {
-                    parent_company_id: self.parent_company_id.clone(),
+                    parent_id: child_id,
+                    parent_company_id: shareholder_company_id,
                     remaining_depth: self.remaining_depth - 1,
                 });
-    
+
                 producer.produce_message(job).await?;
             }
         }

@@ -80,16 +80,16 @@ pub struct OfficerItem {
 #[derive(Debug, Serialize, Deserialize)]
 pub struct DateOfBirth {
     pub day: Option<i32>,
-    pub month: i32,
-    pub year: i32,
+    pub month: Option<i32>,
+    pub year: Option<i32>,
 }
 
 #[derive(Debug, Serialize, Deserialize)]
 pub struct OfficerListResponse {
-    pub active_count: i32,
+    pub active_count: Option<i32>,
     pub etag: Option<String>,
     pub items: Option<Vec<OfficerListItem>>,
-    pub items_per_page: i32,
+    pub items_per_page: Option<i32>,
     pub kind: Option<String>,
     pub links: Links,
     pub start_index: Option<i32>,
@@ -166,7 +166,7 @@ pub struct PrincipalOfficerAddress {
 pub struct ShareholderList {
     pub active_count: Option<i32>,
     pub creased_count: Option<i32>,
-    pub items: Vec<ShareholderListItem>,
+    pub items: Option<Vec<ShareholderListItem>>,
     pub items_per_page: Option<i32>,
     pub links: Option<ShareholderListLinks>,
     pub start_index: Option<i32>,
@@ -175,7 +175,7 @@ pub struct ShareholderList {
 
 #[derive(Debug, Serialize, Deserialize)]
 pub struct ShareholderListItem {
-    pub address: PrincipalOfficerAddress,
+    pub address: Option<PrincipalOfficerAddress>,
     pub ceased: Option<bool>,
     pub ceased_on: Option<NaiveDate>,
     pub country_of_residence: Option<String>,

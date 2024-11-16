@@ -14,7 +14,7 @@ const COMPANY_OFFICERS_URL: &str =
     "https://api.company-information.service.gov.uk/company/{}/officers";
 
 lazy_static! {
-    static ref API_KEY: String = env::var("API_KEY").unwrap();
+    static ref API_KEY: String = env::var("API_KEY").expect("API KEY should be set");
 }
 
 pub async fn get_company(name: &String) {
@@ -71,7 +71,8 @@ pub async fn get_company_officers(company_number: &String) -> OfficerListRespons
 pub async fn get_company_shareholders(
     company_number: &String,
 ) -> Result<ShareholderList, failure::Error> {
-    let url = format!("{} {}", COMPANY_SHAREHOLDERS_URL, company_number);
+    let url = format!("https://api.company-information.service.gov.uk/company/{}/persons-with-significant-control", company_number);
+
     // TODO: create own client struct that implements fns in this file, has client as field
     // I'm actually not sure if this is a good idea? - should check what we do in bridge for inspiration!
     let client = Client::new();
