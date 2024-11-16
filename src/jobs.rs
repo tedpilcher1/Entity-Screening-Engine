@@ -50,19 +50,24 @@ impl RecursiveShareholders {
         let shareholders_list = get_company_shareholders(&self.parent_company_id).await?;
 
         // TODO: fix unwrap - but this should really never fail
-        for shareholder in shareholders_list.items.unwrap() {
-            let shareholder_company_id = shareholder
-                .identification
-                .unwrap()
-                .registration_number
-                .unwrap();
-            let child_id = database.insert_company(&shareholder_company_id).await?;
+        for shareholder in shareholders_list.items.unwrap_or_default() {
+
+            let shareholder_identification = match shareholder.identification {
+                Some(identification) => identification,
+                None => return Ok(()), // graceful finish
+            };
+
+            let sharehold_registration_number = match shareholder_identification.registration_number {
+                Some(registration_numer) => registration_numer,
+                None => return Ok(()),
+            };
+            let child_id = database.insert_company(&sharehold_registration_number).await?;
             database.insert_shareholder(self.parent_id, child_id).await?;
 
             if self.remaining_depth > 0 {
                 let job = Job::RecursiveShareholders(RecursiveShareholders {
                     parent_id: child_id,
-                    parent_company_id: shareholder_company_id,
+                    parent_company_id: sharehold_registration_number,
                     remaining_depth: self.remaining_depth - 1,
                 });
 
