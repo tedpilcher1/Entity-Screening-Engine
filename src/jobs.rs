@@ -74,7 +74,6 @@ impl RecursiveShareholders {
                     shareholder.kind,
                     country,
                     postal_code,
-                    false,
                 )
                 .await?;
             database

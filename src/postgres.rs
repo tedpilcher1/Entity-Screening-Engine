@@ -59,7 +59,28 @@ impl Database {
         Ok(())
     }
 
+    pub async fn insert_root_company(
+        &mut self,
+        company_house_id: &String,
+    ) -> Result<Uuid, failure::Error> {
+    
+        self.insert_company_internal(company_house_id, None, None, None, None, true).await
+    }
+
     pub async fn insert_company(
+        &mut self,
+        company_house_id: &String,
+        name: Option<String>,
+        kind: Option<String>,
+        country: Option<String>,
+        postal_code: Option<String>,
+    ) -> Result<Uuid, failure::Error> {
+        let id: Uuid = Uuid::new_v4();
+
+        self.insert_company_internal(company_house_id, None, None, None, None, false).await
+    }
+
+    async fn insert_company_internal(
         &mut self,
         company_house_id: &String,
         name: Option<String>,
