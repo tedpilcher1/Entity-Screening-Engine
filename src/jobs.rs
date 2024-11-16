@@ -57,17 +57,23 @@ impl RecursiveShareholders {
                 None => return Ok(()), // graceful finish
             };
 
-            let sharehold_registration_number = match shareholder_identification.registration_number {
+            let shareholder_registration_number = match shareholder_identification.registration_number {
                 Some(registration_numer) => registration_numer,
                 None => return Ok(()),
             };
-            let child_id = database.insert_company(&sharehold_registration_number).await?;
+            
+            let (country, postal_code) = match shareholder.address {
+                Some(address) => (address.country, address.postal_code),
+                None => (None, None),
+            };
+
+            let child_id = database.insert_company(&shareholder_registration_number, shareholder.name, shareholder.kind, country, postal_code).await?;
             database.insert_shareholder(self.parent_id, child_id).await?;
 
             if self.remaining_depth > 0 {
                 let job = Job::RecursiveShareholders(RecursiveShareholders {
                     parent_id: child_id,
-                    parent_company_id: sharehold_registration_number,
+                    parent_company_id: shareholder_registration_number,
                     remaining_depth: self.remaining_depth - 1,
                 });
 

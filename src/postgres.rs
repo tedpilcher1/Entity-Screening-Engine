@@ -27,7 +27,11 @@ impl Database {
             r#"
             CREATE TABLE IF NOT EXISTS company (
                 id UUID PRIMARY KEY UNIQUE,
-                company_house_id TEXT NOT NULL
+                company_house_id TEXT NOT NULL,
+                name TEXT,
+                kind TEXT,
+                country TEXT,
+                postal_code TEXT
             )
             "#,
         )
@@ -56,12 +60,20 @@ impl Database {
     pub async fn insert_company(
         &mut self,
         company_house_id: &String,
+        name: Option<String>,
+        kind: Option<String>,
+        country: Option<String>,
+        postal_code: Option<String>,
     ) -> Result<Uuid, failure::Error> {
         let id: Uuid = Uuid::new_v4();
 
-        query("INSERT INTO company (id, company_house_id) VALUES ($1, $2)")
+        query("INSERT INTO company (id, company_house_id, name, kind, country, postal_code) VALUES ($1, $2, $3, $4, $5, $6)")
             .bind(id) // Bind the UUID to the first placeholder ($1)
-            .bind(company_house_id) // Bind the name to the second placeholder ($2)
+            .bind(company_house_id)
+            .bind(name)
+            .bind(kind)
+            .bind(country)
+            .bind(postal_code) // Bind the name to the second placeholder ($2)
             .execute(&mut self.conn)
             .await?;
 
