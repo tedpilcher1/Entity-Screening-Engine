@@ -19,6 +19,7 @@ futures = "0.3"
 sqlx = { version = "0.8", features = [ "runtime-tokio", "tls-native-tls", "postgres", "uuid" ] }
 failure = "0.1.8"
 lazy_static = "1.5.0"
+actix-web = "4.0"
 
 [dependencies.uuid]
 version = "1.11.0"
