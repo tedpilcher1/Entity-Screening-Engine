@@ -25,12 +25,6 @@ impl Worker {
     // TODO: negative ack
     pub async fn do_work(&mut self) -> Result<(), failure::Error> {
         while let Some(msg) = self.consumer.internal_consumer.try_next().await? {
-            // acknowledge message once processing completed
-            match self.consumer.internal_consumer.ack(&msg).await {
-                Ok(_) => {}
-                Err(_) => {} // TODO: log and move on, potentially retry x times then give up
-            }
-
             let job = match msg.deserialize() {
                 Ok(data) => data,
                 Err(e) => {
@@ -46,12 +40,18 @@ impl Worker {
                 Job::RecursiveShareholders(job) => {
                     job.do_job(&mut self.database, &mut self.producer).await
                 }
+                Job::Officers(job) => job.do_job(&mut self.database).await,
             };
 
             match job_result {
                 // TODO: log + metrics
                 Ok(_) => {}
                 Err(_) => {}
+            }
+
+            match self.consumer.internal_consumer.ack(&msg).await {
+                Ok(_) => {}
+                Err(_) => {} // TODO: log and move on, potentially retry x times then give up
             }
         }
         Ok(())
