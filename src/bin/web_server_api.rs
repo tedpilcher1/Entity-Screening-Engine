@@ -67,6 +67,7 @@ async fn start_get_shareholders_task(
     database: &mut Database,
     company_house_number: String,
     depth: i32,
+    get_officers: bool,
 ) -> Result<Uuid, failure::Error> {
     let root_profile_id = database.insert_root_company(&company_house_number).await?;
     let pulsar_client = PulsarClient::new().await;
@@ -76,6 +77,7 @@ async fn start_get_shareholders_task(
         parent_id: root_profile_id,
         parent_company_id: company_house_number,
         remaining_depth: min(depth, MAX_DEPTH),
+        get_officers,
     });
 
     producer.produce_message(job).await?;
@@ -83,15 +85,15 @@ async fn start_get_shareholders_task(
     Ok(root_profile_id)
 }
 
-async fn shareholders(params: web::Path<(String, i32)>) -> impl Responder {
-    let (company_house_number, depth) = (params.0.clone(), params.1);
+async fn shareholders(params: web::Path<(String, i32, bool)>) -> impl Responder {
+    let (company_house_number, depth, get_officers) = (params.0.clone(), params.1, params.2);
     let padded_company_house_number = format!("{:0>8}", company_house_number);
 
     let mut database = Database::connect()
         .await
         .expect("Should be able to connect to db");
 
-    match start_get_shareholders_task(&mut database, padded_company_house_number, depth).await {
+    match start_get_shareholders_task(&mut database, padded_company_house_number, depth, get_officers).await {
         Ok(root_profile_id) => HttpResponse::Ok().json(root_profile_id),
         Err(e) => {
             println!("{:?}", e); // TODO, replace with proper logging
@@ -118,7 +120,7 @@ async fn main() -> std::io::Result<()> {
     HttpServer::new(|| {
         App::new()
             .service(
-                web::resource("/get_shareholders/{root_profile_id}")
+                web::resource("/get_shareholders/{root_profile_id}/{get_officers}")
                     .route(web::get().to(get_shareholders)),
             )
             .service(

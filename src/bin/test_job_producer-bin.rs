@@ -19,6 +19,7 @@ async fn simulate_find_shareholders_endpoint() {
         parent_id,
         parent_company_id: company_id,
         remaining_depth: depth,
+        get_officers: true,
     });
 
     producer.produce_message(job).await.unwrap();

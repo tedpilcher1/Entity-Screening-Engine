@@ -37,6 +37,7 @@ pub struct RecursiveShareholders {
     pub parent_id: Uuid,
     pub parent_company_id: String,
     pub remaining_depth: i32,
+    pub get_officers: bool,
 }
 
 impl RecursiveShareholders {
@@ -85,11 +86,21 @@ impl RecursiveShareholders {
                 .insert_shareholder(self.parent_id, child_id)
                 .await?;
 
+            if self.get_officers {
+                let job = Job::Officers(Officers {
+                    company_id: child_id,
+                    company_house_number: shareholder_registration_number.clone(),
+                });
+
+                producer.produce_message(job).await?;
+            }
+
             if self.remaining_depth > 0 {
                 let job = Job::RecursiveShareholders(RecursiveShareholders {
                     parent_id: child_id,
                     parent_company_id: shareholder_registration_number,
                     remaining_depth: self.remaining_depth - 1,
+                    get_officers: self.get_officers,
                 });
 
                 producer.produce_message(job).await?;
