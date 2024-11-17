@@ -2,9 +2,6 @@
 
 
 ## To do:
-- Create web server, initally with only two endpoints:
--- find_shareholders(company_house_number, depth) -> returns root id
--- get_shareholders(root_id) -> returns recursive shareholders
 - React frontend
 - Treat individuals and companies seperately
 - Add functionality to find officers
