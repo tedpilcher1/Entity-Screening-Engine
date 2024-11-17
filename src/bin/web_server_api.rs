@@ -76,15 +76,21 @@ async fn start_get_shareholders_task(database: &mut Database, company_house_numb
     Ok(root_profile_id)
 }
 
-async fn shareholders(company_house_number: web::Path<String>, depth: web::Path<i32>) -> impl Responder {
+async fn shareholders(params: web::Path<(String, i32)>,) -> impl Responder {
+
+    let (company_house_number, depth) = (params.0.clone(), params.1);
+    let padded_company_house_number = format!("{:0>8}", company_house_number);
 
     let mut database = Database::connect()
         .await
         .expect("Should be able to connect to db");
 
-    match start_get_shareholders_task(&mut database, company_house_number.clone(), *depth).await {
+    match start_get_shareholders_task(&mut database, padded_company_house_number, depth).await {
         Ok(root_profile_id) => HttpResponse::Ok().json(root_profile_id),
-        Err(_) => HttpResponse::InternalServerError().into(),
+        Err(e) => {
+            println!("{:?}", e); // TODO, replace with proper logging
+            HttpResponse::InternalServerError().into()
+        },
     }
 }
 
@@ -105,14 +111,8 @@ async fn main() -> std::io::Result<()> {
     dotenv().ok();
     HttpServer::new(|| {
         App::new()
-            .route(
-                "/get_shareholders/{root_profile_id}",
-                web::get().to(get_shareholders),
-            )
-            .route(
-                "shareholders/{company_house_number}/{depth}",
-                web::post().to(shareholders),
-            )
+            .service(web::resource("/get_shareholders/{root_profile_id}").route(web::get().to(get_shareholders)))
+            .service(web::resource("/shareholders/{company_house_number}/{depth}").route(web::post().to(shareholders)))
     })
     .bind("127.0.0.1:8080")?
     .run()

@@ -77,7 +77,7 @@ impl Database {
     ) -> Result<Uuid, failure::Error> {
         let id: Uuid = Uuid::new_v4();
 
-        self.insert_company_internal(company_house_id, None, None, None, None, false).await
+        self.insert_company_internal(company_house_id, name, kind, country, postal_code, false).await
     }
 
     async fn insert_company_internal(

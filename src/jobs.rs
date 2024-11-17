@@ -62,6 +62,8 @@ impl RecursiveShareholders {
                     None => return Ok(()),
                 };
 
+            let padded_company_house_number = format!("{:0>8}", shareholder_registration_number);
+
             let (country, postal_code) = match shareholder.address {
                 Some(address) => (address.country, address.postal_code),
                 None => (None, None),
@@ -69,7 +71,7 @@ impl RecursiveShareholders {
 
             let child_id = database
                 .insert_company(
-                    &shareholder_registration_number,
+                    &padded_company_house_number,
                     shareholder.name,
                     shareholder.kind,
                     country,
