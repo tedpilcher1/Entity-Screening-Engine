@@ -42,30 +42,25 @@ pub async fn get_company(name: &String) {
     todo!()
 }
 
-pub async fn get_company_officers(company_number: &String) -> OfficerListResponse {
-    // TODO: urls should be lazy-loaded
+pub async fn get_company_officers(company_number: &String) -> Result<OfficerListResponse, failure::Error> {
     let url = format!("{} {}", COMPANY_OFFICERS_URL, company_number);
     let client = Client::new();
-
-    let mut params = HashMap::new();
-    params.insert("q", "Google"); // TODO: stop this from being hardcoded
-
+    
     let mut headers = header::HeaderMap::new();
     headers.insert(
         "Authorization",
-        header::HeaderValue::from_str(&format!("{}", API_KEY.as_str())).unwrap(),
+        header::HeaderValue::from_str(&format!("{}", API_KEY.as_str()))?,
     );
 
     let response = client
         .get(url)
         .headers(headers)
-        .query(&params)
         .send()
         .await
         .unwrap();
 
-    let officer_search_response: OfficerListResponse = response.json().await.unwrap();
-    officer_search_response
+    let officer_search_response: OfficerListResponse = response.json().await?;
+    Ok(officer_search_response)
 }
 
 pub async fn get_company_shareholders(
