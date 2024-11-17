@@ -1,3 +1,4 @@
+use chrono::NaiveDate;
 use serde::{Deserialize, Serialize};
 use sqlx::postgres::PgConnection;
 use sqlx::{query, Connection, FromRow};
@@ -24,10 +25,11 @@ impl Database {
         let mut transaction = self.conn.begin().await?;
 
         // Execute the first CREATE TABLE statement
+        // TODO: Include date of incorporation?
         query(
             r#"
             CREATE TABLE IF NOT EXISTS company (
-                id UUID PRIMARY KEY UNIQUE,
+                id UUID PRIMARY KEY UNIQUE NOT NULL,
                 company_house_id TEXT NOT NULL,
                 name TEXT,
                 kind TEXT,
@@ -53,6 +55,35 @@ impl Database {
         .execute(&mut *transaction)
         .await?;
 
+        query(
+            r#"
+            CREATE TABLE IF NOT EXISTS officer (
+                id UUID PRIMARY KEY UNIQUE NOT NULL, 
+                company_id UUID NOT NULL,
+                individual_id UUID NOT NULL,
+                officer_role TEXT
+            )
+            "#,
+        )
+        .execute(&mut *transaction)
+        .await?;
+
+        query(
+            r#"
+            CREATE TABLE IF NOT EXISTS individual (
+                id UUID PRIMARY KEY UNIQUE NOT NULL, 
+                comapany_house_number TEXT NOT NULL,
+                name TEXT,
+                nationality TEXT,
+                country TEXT,
+                postal_code TEXT,
+                date_of_birth TEXT
+            )
+            "#,
+        )
+        .execute(&mut *transaction)
+        .await?;
+
         // Commit the transaction if both statements succeed
         transaction.commit().await?;
 
@@ -63,8 +94,8 @@ impl Database {
         &mut self,
         company_house_id: &String,
     ) -> Result<Uuid, failure::Error> {
-    
-        self.insert_company_internal(company_house_id, None, None, None, None, true).await
+        self.insert_company_internal(company_house_id, None, None, None, None, true)
+            .await
     }
 
     pub async fn insert_company(
@@ -75,9 +106,8 @@ impl Database {
         country: Option<String>,
         postal_code: Option<String>,
     ) -> Result<Uuid, failure::Error> {
-        let id: Uuid = Uuid::new_v4();
-
-        self.insert_company_internal(company_house_id, name, kind, country, postal_code, false).await
+        self.insert_company_internal(company_house_id, name, kind, country, postal_code, false)
+            .await
     }
 
     async fn insert_company_internal(
@@ -119,7 +149,10 @@ impl Database {
         Ok(())
     }
 
-    pub async fn get_shareholders(&mut self, root_company_id: &Uuid) -> Result<Vec<CompanyDetails>, failure::Error> {
+    pub async fn get_shareholders(
+        &mut self,
+        root_company_id: &Uuid,
+    ) -> Result<Vec<CompanyDetails>, failure::Error> {
         let query = r#"
             SELECT 
                 c.id AS company_id,
@@ -142,6 +175,49 @@ impl Database {
             .await?;
 
         Ok(shareholders)
+    }
+
+    pub async fn insert_officer(
+        &mut self,
+        company_id: Uuid,
+        individual_id: Uuid,
+        officer_role: Option<String>,
+    ) -> Result<(), failure::Error> {
+        query("INSERT INTO officer (id, company_id, individual_id, officer_role) VALUES ($1, $2, $3, $4)")
+            .bind(Uuid::new_v4())
+            .bind(company_id)
+            .bind(individual_id)
+            .bind(officer_role)
+            .execute(&mut self.conn)
+            .await?;
+
+        Ok(())
+    }
+
+    pub async fn insert_individual(
+        &mut self,
+        company_house_number: String,
+        name: Option<String>,
+        nationality: Option<String>,
+        country: Option<String>,
+        postal_code: Option<String>,
+        date_of_birth: Option<String>, // TODO: this shouldn't be a string
+    ) -> Result<Uuid, failure::Error> {
+
+        let id = Uuid::new_v4();
+
+        query("INSERT INTO individual (id, company_house_number, name, nationality, country, postal_code, date_of_birth) VALUES ($1, $2, $3, $4, $5, $6, $7)")
+            .bind(id)
+            .bind(company_house_number)
+            .bind(name)
+            .bind(nationality)
+            .bind(country)
+            .bind(postal_code)
+            .bind(date_of_birth)
+            .execute(&mut self.conn)
+            .await?;
+
+        Ok(id)
     }
 }
 
