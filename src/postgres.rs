@@ -203,7 +203,6 @@ impl Database {
         postal_code: Option<String>,
         date_of_birth: Option<String>, // TODO: this shouldn't be a string
     ) -> Result<Uuid, failure::Error> {
-
         let id = Uuid::new_v4();
 
         query("INSERT INTO individual (id, company_house_number, name, nationality, country, postal_code, date_of_birth) VALUES ($1, $2, $3, $4, $5, $6, $7)")

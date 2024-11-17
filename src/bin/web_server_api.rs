@@ -5,7 +5,11 @@ use dotenv::dotenv;
 use actix_web::{web, App, HttpResponse, HttpServer, Responder};
 use serde::{Deserialize, Serialize};
 use uuid::Uuid;
-use Company_Investigation::{jobs::{Job, RecursiveShareholders}, postgres::{CompanyDetails, Database}, pulsar::PulsarClient};
+use Company_Investigation::{
+    jobs::{Job, RecursiveShareholders},
+    postgres::{CompanyDetails, Database},
+    pulsar::PulsarClient,
+};
 
 const MAX_DEPTH: i32 = 5;
 
@@ -59,8 +63,11 @@ async fn get_shareholders(root_company_id: web::Path<Uuid>) -> impl Responder {
     })
 }
 
-async fn start_get_shareholders_task(database: &mut Database, company_house_number: String, depth: i32) -> Result<Uuid, failure::Error> {
-
+async fn start_get_shareholders_task(
+    database: &mut Database,
+    company_house_number: String,
+    depth: i32,
+) -> Result<Uuid, failure::Error> {
     let root_profile_id = database.insert_root_company(&company_house_number).await?;
     let pulsar_client = PulsarClient::new().await;
     let mut producer = pulsar_client.create_producer().await;
@@ -76,8 +83,7 @@ async fn start_get_shareholders_task(database: &mut Database, company_house_numb
     Ok(root_profile_id)
 }
 
-async fn shareholders(params: web::Path<(String, i32)>,) -> impl Responder {
-
+async fn shareholders(params: web::Path<(String, i32)>) -> impl Responder {
     let (company_house_number, depth) = (params.0.clone(), params.1);
     let padded_company_house_number = format!("{:0>8}", company_house_number);
 
@@ -90,7 +96,7 @@ async fn shareholders(params: web::Path<(String, i32)>,) -> impl Responder {
         Err(e) => {
             println!("{:?}", e); // TODO, replace with proper logging
             HttpResponse::InternalServerError().into()
-        },
+        }
     }
 }
 
@@ -111,8 +117,14 @@ async fn main() -> std::io::Result<()> {
     dotenv().ok();
     HttpServer::new(|| {
         App::new()
-            .service(web::resource("/get_shareholders/{root_profile_id}").route(web::get().to(get_shareholders)))
-            .service(web::resource("/shareholders/{company_house_number}/{depth}").route(web::post().to(shareholders)))
+            .service(
+                web::resource("/get_shareholders/{root_profile_id}")
+                    .route(web::get().to(get_shareholders)),
+            )
+            .service(
+                web::resource("/shareholders/{company_house_number}/{depth}")
+                    .route(web::post().to(shareholders)),
+            )
     })
     .bind("127.0.0.1:8080")?
     .run()
