@@ -42,22 +42,23 @@ pub async fn get_company(name: &String) {
     todo!()
 }
 
-pub async fn get_company_officers(company_number: &String) -> Result<OfficerListResponse, failure::Error> {
-    let url = format!("{} {}", COMPANY_OFFICERS_URL, company_number);
+pub async fn get_company_officers(
+    company_number: &String,
+) -> Result<OfficerListResponse, failure::Error> {
+    let url = format!(
+        "https://api.company-information.service.gov.uk/company/{}/officers",
+        company_number
+    );
+
     let client = Client::new();
-    
+
     let mut headers = header::HeaderMap::new();
     headers.insert(
         "Authorization",
         header::HeaderValue::from_str(&format!("{}", API_KEY.as_str()))?,
     );
 
-    let response = client
-        .get(url)
-        .headers(headers)
-        .send()
-        .await
-        .unwrap();
+    let response = client.get(url).headers(headers).send().await.unwrap();
 
     let officer_search_response: OfficerListResponse = response.json().await?;
     Ok(officer_search_response)
