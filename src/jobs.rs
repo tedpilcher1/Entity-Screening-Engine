@@ -117,6 +117,7 @@ pub struct Officers {
 }
 
 impl Officers {
+    // TODO: officers returned can be companies, hence shouldn't just assume individual
     pub async fn do_job(&self, database: &mut Database) -> Result<(), failure::Error> {
         let officers = get_company_officers(&self.company_house_number).await?;
 

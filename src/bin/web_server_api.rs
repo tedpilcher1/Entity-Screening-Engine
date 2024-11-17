@@ -120,11 +120,11 @@ async fn main() -> std::io::Result<()> {
     HttpServer::new(|| {
         App::new()
             .service(
-                web::resource("/get_shareholders/{root_profile_id}/{get_officers}")
+                web::resource("/get_shareholders/{root_profile_id}")
                     .route(web::get().to(get_shareholders)),
             )
             .service(
-                web::resource("/shareholders/{company_house_number}/{depth}")
+                web::resource("/shareholders/{company_house_number}/{depth}/{get_officers}")
                     .route(web::post().to(shareholders)),
             )
     })

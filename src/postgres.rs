@@ -67,12 +67,12 @@ impl Database {
         )
         .execute(&mut *transaction)
         .await?;
-
+        
         query(
             r#"
             CREATE TABLE IF NOT EXISTS individual (
                 id UUID PRIMARY KEY UNIQUE NOT NULL, 
-                comapany_house_number TEXT NOT NULL,
+                company_house_number TEXT NOT NULL,
                 name TEXT,
                 nationality TEXT,
                 country TEXT,
