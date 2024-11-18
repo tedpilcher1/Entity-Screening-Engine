@@ -3,8 +3,10 @@
 
 ## To do:
 - React frontend
-- Treat individuals and companies seperately
+- Treat individuals and companies the same
+- Treat duplicates as one
 - Add functionality to find officers
+- Proper Logging
 
 ## Requirements to run
 - Docker running
