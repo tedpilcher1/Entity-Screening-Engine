@@ -1,3 +1,4 @@
+use chrono::Utc;
 use serde::{Deserialize, Serialize};
 use sqlx::postgres::PgConnection;
 use sqlx::{query, Connection, FromRow};
@@ -22,6 +23,17 @@ impl Database {
         // TODO: Need to link id as foreign key to both
         // parent_id and child_id in shareholer
         let mut transaction = self.conn.begin().await?;
+
+        query(
+            r#"
+            CREATE TABLE IF NOT EXISTS check (
+                id UUID PRIMARY KEY UNIQUE NOT NULL,
+                started_at TEXT NOT NULL
+            )
+            "#,
+        )
+        .execute(&mut *transaction)
+        .await?;
 
         query(
             r#"
@@ -70,6 +82,19 @@ impl Database {
         transaction.commit().await?;
 
         Ok(())
+    }
+
+    pub async fn insert_check(&mut self) -> Result<Uuid, failure::Error> {
+        let id = Uuid::new_v4();
+        let started_at = Utc::now().to_string();
+
+        query("INSERT INTO check (id, started_at) VALUES ($1, $2)")
+            .bind(id)
+            .bind(started_at)
+            .execute(&mut self.conn)
+            .await?;
+
+        Ok(id)
     }
 
     pub async fn insert_root_entity(

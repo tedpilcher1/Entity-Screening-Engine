@@ -106,9 +106,11 @@ async fn shareholders(params: web::Path<(String, i32, bool)>) -> impl Responder 
     let (company_house_number, depth, get_officers) = (params.0.clone(), params.1, params.2);
     let padded_company_house_number = format!("{:0>8}", company_house_number);
 
-    let mut database = Database::connect()
+    let mut database: Database = Database::connect()
         .await
         .expect("Should be able to connect to db");
+    
+    let _check_id = database.insert_check().await.expect("should be able to create check");
 
     match start_get_shareholders_task(
         &mut database,
