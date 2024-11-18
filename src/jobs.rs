@@ -35,6 +35,7 @@ impl DeserializeMessage for Job {
 #[derive(Serialize, Deserialize, Debug)]
 pub struct RecursiveShareholders {
     pub parent_id: Uuid,
+    pub check_id: Uuid,
     pub parent_company_id: String,
     pub remaining_depth: i32,
     pub get_officers: bool,
@@ -78,6 +79,7 @@ impl RecursiveShareholders {
             let child_id = database
                 .insert_entity(
                     &padded_company_house_number,
+                    &self.check_id,
                     shareholder.name,
                     shareholder.kind,
                     country,
@@ -92,6 +94,7 @@ impl RecursiveShareholders {
             if self.get_officers {
                 let job = Job::Officers(Officers {
                     company_id: child_id,
+                    check_id: self.check_id,
                     company_house_number: shareholder_registration_number.clone(),
                 });
 
@@ -101,6 +104,7 @@ impl RecursiveShareholders {
             if self.remaining_depth > 0 {
                 let job = Job::RecursiveShareholders(RecursiveShareholders {
                     parent_id: child_id,
+                    check_id: self.check_id,
                     parent_company_id: shareholder_registration_number,
                     remaining_depth: self.remaining_depth - 1,
                     get_officers: self.get_officers,
@@ -116,6 +120,7 @@ impl RecursiveShareholders {
 #[derive(Serialize, Deserialize, Debug)]
 pub struct Officers {
     pub company_id: Uuid,
+    pub check_id: Uuid,
     pub company_house_number: String,
 }
 
@@ -145,6 +150,7 @@ impl Officers {
             let individual_id = database
                 .insert_entity(
                     &officer_company_house_number,
+                    &self.check_id,
                     officer.name,
                     officer.nationality,
                     country,

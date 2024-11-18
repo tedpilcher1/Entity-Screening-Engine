@@ -78,6 +78,18 @@ impl Database {
         .execute(&mut *transaction)
         .await?;
 
+        query(
+            r#"
+            CREATE TABLE IF NOT EXISTS checkEntityMap (
+                check_id UUID NOT NULL, 
+                entity_id UUID NOT NULL,
+                PRIMARY KEY(check_id, entity_id)
+            )
+            "#,
+        )
+        .execute(&mut *transaction)
+        .await?;
+
         // Commit the transaction if both statements succeed
         transaction.commit().await?;
 
@@ -100,14 +112,16 @@ impl Database {
     pub async fn insert_root_entity(
         &mut self,
         company_house_id: &String,
+        check_id: &Uuid,
     ) -> Result<Uuid, failure::Error> {
-        self.insert_entity_internal(company_house_id, None, None, None, None, None, true)
+        self.insert_entity_internal(company_house_id, check_id, None, None, None, None, None, true)
             .await
     }
 
     pub async fn insert_entity(
         &mut self,
         company_house_id: &String,
+        check_id: &Uuid,
         name: Option<String>,
         kind: Option<String>,
         country: Option<String>,
@@ -116,6 +130,7 @@ impl Database {
     ) -> Result<Uuid, failure::Error> {
         self.insert_entity_internal(
             company_house_id,
+            check_id,
             name,
             kind,
             country,
@@ -129,6 +144,7 @@ impl Database {
     async fn insert_entity_internal(
         &mut self,
         company_house_id: &String,
+        check_id: &Uuid,
         name: Option<String>,
         kind: Option<String>,
         country: Option<String>,
@@ -149,6 +165,12 @@ impl Database {
             .bind(is_root)
             .execute(&mut self.conn)
             .await?;
+
+        query("INSERT INTO checkEntityMap (check_id, entity_id) VALUES ($1, $2)")
+        .bind(check_id)
+        .bind(id)
+        .execute(&mut self.conn)
+        .await?;
 
         Ok(id)
     }

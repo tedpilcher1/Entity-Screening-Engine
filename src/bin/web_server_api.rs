@@ -83,15 +83,17 @@ async fn get_shareholders(root_company_id: web::Path<Uuid>) -> impl Responder {
 async fn start_get_shareholders_task(
     database: &mut Database,
     company_house_number: String,
+    check_id: Uuid,
     depth: i32,
     get_officers: bool,
 ) -> Result<Uuid, failure::Error> {
-    let root_profile_id = database.insert_root_entity(&company_house_number).await?;
+    let root_profile_id = database.insert_root_entity(&company_house_number, &check_id).await?;
     let pulsar_client = PulsarClient::new().await;
     let mut producer = pulsar_client.create_producer().await;
 
     let job = Job::RecursiveShareholders(RecursiveShareholders {
         parent_id: root_profile_id,
+        check_id,
         parent_company_id: company_house_number,
         remaining_depth: min(depth, MAX_DEPTH),
         get_officers,
@@ -110,11 +112,12 @@ async fn shareholders(params: web::Path<(String, i32, bool)>) -> impl Responder 
         .await
         .expect("Should be able to connect to db");
     
-    let _check_id = database.insert_check().await.expect("should be able to create check");
+    let check_id = database.insert_check().await.expect("should be able to create check");
 
     match start_get_shareholders_task(
         &mut database,
         padded_company_house_number,
+        check_id,
         depth,
         get_officers,
     )
