@@ -46,7 +46,9 @@ impl Worker {
             match job_result {
                 // TODO: log + metrics
                 Ok(_) => {}
-                Err(e) => {println!("{:?}", e)}
+                Err(e) => {
+                    println!("{:?}", e)
+                }
             }
 
             match self.consumer.internal_consumer.ack(&msg).await {

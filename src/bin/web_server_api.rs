@@ -7,7 +7,7 @@ use serde::{Deserialize, Serialize};
 use uuid::Uuid;
 use Company_Investigation::{
     jobs::{Job, RecursiveShareholders},
-    postgres::{CompanyDetails, Database},
+    postgres::{Database, EntityDetails},
     pulsar::PulsarClient,
 };
 
@@ -16,32 +16,32 @@ const MAX_DEPTH: i32 = 5;
 async fn iteratively_get_shareholders(
     database: &mut Database,
     root_company_id: &Uuid,
-) -> Result<Vec<Company>, failure::Error> {
-    let mut result: Vec<Company> = vec![];
+) -> Result<Vec<Entity>, failure::Error> {
+    let mut result: Vec<Entity> = vec![];
     // Store indices instead of trying to clone vectors
     let mut stack: Vec<(Uuid, usize)> = vec![(root_company_id.clone(), 0)];
 
     while let Some((current_id, parent_index)) = stack.pop() {
-        let company_details = database.get_shareholders(&current_id).await?;
+        let entity_details = database.get_shareholders(&current_id).await?;
+        
+        for entity in entity_details {
+            let entity_id = entity.entity_id;
 
-        for company in company_details {
-            let company_id = company.company_id;
-
-            let new_company = Company {
-                company_details: company,
+            let new_entity = Entity {
+                entity_details: entity,
                 shareholders: vec![], // Start with empty shareholders
             };
 
             // Push the company's ID and its index in the result vector
             let current_index = result.len();
-            stack.push((company_id, current_index));
+            stack.push((entity_id, current_index));
 
             if parent_index < result.len() {
                 // Add this company as a shareholder to its parent
-                result[parent_index].shareholders.push(new_company);
+                result[parent_index].shareholders.push(new_entity);
             } else {
                 // This is a root level company
-                result.push(new_company);
+                result.push(new_entity);
             }
         }
     }
@@ -53,9 +53,13 @@ async fn get_shareholders(root_company_id: web::Path<Uuid>) -> impl Responder {
     let mut database = Database::connect()
         .await
         .expect("Should be able to connect to db");
-    let shareholders = iteratively_get_shareholders(&mut database, &root_company_id)
-        .await
-        .unwrap_or_default();
+    let shareholders = match iteratively_get_shareholders(&mut database, &root_company_id).await {
+        Ok(shareholders) => shareholders,
+        Err(e) => {
+            println!("{:?}", e);
+            vec![]
+        }
+    };
 
     HttpResponse::Ok().json(CompanyShareholdersResponse {
         root_company_id: *root_company_id,
@@ -69,7 +73,7 @@ async fn start_get_shareholders_task(
     depth: i32,
     get_officers: bool,
 ) -> Result<Uuid, failure::Error> {
-    let root_profile_id = database.insert_root_company(&company_house_number).await?;
+    let root_profile_id = database.insert_root_entity(&company_house_number).await?;
     let pulsar_client = PulsarClient::new().await;
     let mut producer = pulsar_client.create_producer().await;
 
@@ -93,7 +97,14 @@ async fn shareholders(params: web::Path<(String, i32, bool)>) -> impl Responder 
         .await
         .expect("Should be able to connect to db");
 
-    match start_get_shareholders_task(&mut database, padded_company_house_number, depth, get_officers).await {
+    match start_get_shareholders_task(
+        &mut database,
+        padded_company_house_number,
+        depth,
+        get_officers,
+    )
+    .await
+    {
         Ok(root_profile_id) => HttpResponse::Ok().json(root_profile_id),
         Err(e) => {
             println!("{:?}", e); // TODO, replace with proper logging
@@ -105,13 +116,13 @@ async fn shareholders(params: web::Path<(String, i32, bool)>) -> impl Responder 
 #[derive(Serialize, Deserialize)]
 struct CompanyShareholdersResponse {
     root_company_id: Uuid,
-    shareholders: Vec<Company>,
+    shareholders: Vec<Entity>,
 }
 
 #[derive(Serialize, Deserialize)]
-struct Company {
-    company_details: CompanyDetails,
-    shareholders: Vec<Company>,
+struct Entity {
+    entity_details: EntityDetails,
+    shareholders: Vec<Entity>,
 }
 
 #[actix_web::main]

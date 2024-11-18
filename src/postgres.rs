@@ -1,4 +1,3 @@
-use chrono::NaiveDate;
 use serde::{Deserialize, Serialize};
 use sqlx::postgres::PgConnection;
 use sqlx::{query, Connection, FromRow};
@@ -24,17 +23,16 @@ impl Database {
         // parent_id and child_id in shareholer
         let mut transaction = self.conn.begin().await?;
 
-        // Execute the first CREATE TABLE statement
-        // TODO: Include date of incorporation?
         query(
             r#"
-            CREATE TABLE IF NOT EXISTS company (
+            CREATE TABLE IF NOT EXISTS entity (
                 id UUID PRIMARY KEY UNIQUE NOT NULL,
                 company_house_id TEXT NOT NULL,
                 name TEXT,
                 kind TEXT,
                 country TEXT,
                 postal_code TEXT,
+                date_of_origin TEXT,
                 is_root BOOLEAN NOT NULL
             )
             "#,
@@ -60,24 +58,8 @@ impl Database {
             CREATE TABLE IF NOT EXISTS officer (
                 id UUID PRIMARY KEY UNIQUE NOT NULL, 
                 company_id UUID NOT NULL,
-                individual_id UUID NOT NULL,
+                entity_id UUID NOT NULL,
                 officer_role TEXT
-            )
-            "#,
-        )
-        .execute(&mut *transaction)
-        .await?;
-        
-        query(
-            r#"
-            CREATE TABLE IF NOT EXISTS individual (
-                id UUID PRIMARY KEY UNIQUE NOT NULL, 
-                company_house_number TEXT NOT NULL,
-                name TEXT,
-                nationality TEXT,
-                country TEXT,
-                postal_code TEXT,
-                date_of_birth TEXT
             )
             "#,
         )
@@ -90,44 +72,55 @@ impl Database {
         Ok(())
     }
 
-    pub async fn insert_root_company(
+    pub async fn insert_root_entity(
         &mut self,
         company_house_id: &String,
     ) -> Result<Uuid, failure::Error> {
-        self.insert_company_internal(company_house_id, None, None, None, None, true)
+        self.insert_entity_internal(company_house_id, None, None, None, None, None, true)
             .await
     }
 
-    pub async fn insert_company(
+    pub async fn insert_entity(
         &mut self,
         company_house_id: &String,
         name: Option<String>,
         kind: Option<String>,
         country: Option<String>,
         postal_code: Option<String>,
+        date_of_origin: Option<String>,
     ) -> Result<Uuid, failure::Error> {
-        self.insert_company_internal(company_house_id, name, kind, country, postal_code, false)
-            .await
+        self.insert_entity_internal(
+            company_house_id,
+            name,
+            kind,
+            country,
+            postal_code,
+            date_of_origin,
+            false,
+        )
+        .await
     }
 
-    async fn insert_company_internal(
+    async fn insert_entity_internal(
         &mut self,
         company_house_id: &String,
         name: Option<String>,
         kind: Option<String>,
         country: Option<String>,
         postal_code: Option<String>,
+        date_of_origin: Option<String>,
         is_root: bool,
     ) -> Result<Uuid, failure::Error> {
         let id: Uuid = Uuid::new_v4();
 
-        query("INSERT INTO company (id, company_house_id, name, kind, country, postal_code, is_root) VALUES ($1, $2, $3, $4, $5, $6, $7)")
-            .bind(id) // Bind the UUID to the first placeholder ($1)
+        query("INSERT INTO entity (id, company_house_id, name, kind, country, postal_code, date_of_origin, is_root) VALUES ($1, $2, $3, $4, $5, $6, $7, $8)")
+            .bind(id)
             .bind(company_house_id)
             .bind(name)
             .bind(kind)
             .bind(country)
-            .bind(postal_code) // Bind the name to the second placeholder ($2)
+            .bind(postal_code)
+            .bind(date_of_origin)
             .bind(is_root)
             .execute(&mut self.conn)
             .await?;
@@ -151,26 +144,27 @@ impl Database {
 
     pub async fn get_shareholders(
         &mut self,
-        root_company_id: &Uuid,
-    ) -> Result<Vec<CompanyDetails>, failure::Error> {
+        root_entity_id: &Uuid,
+    ) -> Result<Vec<EntityDetails>, failure::Error> {
         let query = r#"
             SELECT 
-                c.id AS company_id,
+                c.id AS entity_id,
                 c.company_house_id AS company_house_id,
-                c.name AS company_name,
-                c.kind as company_kind,
-                c.country as company_country,
-                c.postal_code as company_postal_code
+                c.name AS entity_name,
+                c.kind as entity_kind,
+                c.country as entity_country,
+                c.postal_code as entity_postal_code,
+                c.date_of_origin as entity_date_of_origin
             FROM 
                 shareholder sh
             INNER JOIN 
-                company c ON sh.child_id = c.id
+                entity c ON sh.child_id = c.id
             WHERE 
                 sh.parent_id = $1;
         "#;
 
-        let shareholders: Vec<CompanyDetails> = sqlx::query_as::<_, CompanyDetails>(query)
-            .bind(root_company_id)
+        let shareholders: Vec<EntityDetails> = sqlx::query_as::<_, EntityDetails>(query)
+            .bind(root_entity_id)
             .fetch_all(&mut self.conn)
             .await?;
 
@@ -180,52 +174,29 @@ impl Database {
     pub async fn insert_officer(
         &mut self,
         company_id: Uuid,
-        individual_id: Uuid,
+        entity_id: Uuid,
         officer_role: Option<String>,
     ) -> Result<(), failure::Error> {
-        query("INSERT INTO officer (id, company_id, individual_id, officer_role) VALUES ($1, $2, $3, $4)")
-            .bind(Uuid::new_v4())
-            .bind(company_id)
-            .bind(individual_id)
-            .bind(officer_role)
-            .execute(&mut self.conn)
-            .await?;
+        query(
+            "INSERT INTO officer (id, company_id, entity_id, officer_role) VALUES ($1, $2, $3, $4)",
+        )
+        .bind(Uuid::new_v4())
+        .bind(company_id)
+        .bind(entity_id)
+        .bind(officer_role)
+        .execute(&mut self.conn)
+        .await?;
 
         Ok(())
-    }
-
-    pub async fn insert_individual(
-        &mut self,
-        company_house_number: String,
-        name: Option<String>,
-        nationality: Option<String>,
-        country: Option<String>,
-        postal_code: Option<String>,
-        date_of_birth: Option<String>, // TODO: this shouldn't be a string
-    ) -> Result<Uuid, failure::Error> {
-        let id = Uuid::new_v4();
-
-        query("INSERT INTO individual (id, company_house_number, name, nationality, country, postal_code, date_of_birth) VALUES ($1, $2, $3, $4, $5, $6, $7)")
-            .bind(id)
-            .bind(company_house_number)
-            .bind(name)
-            .bind(nationality)
-            .bind(country)
-            .bind(postal_code)
-            .bind(date_of_birth)
-            .execute(&mut self.conn)
-            .await?;
-
-        Ok(id)
     }
 }
 
 #[derive(Debug, FromRow, Serialize, Deserialize)]
-pub struct CompanyDetails {
-    pub company_id: Uuid,
+pub struct EntityDetails {
+    pub entity_id: Uuid,
     pub company_house_id: String,
-    pub company_name: Option<String>,
-    pub company_kind: Option<String>,
-    pub company_country: Option<String>,
-    pub company_postal_code: Option<String>,
+    pub entity_name: Option<String>,
+    pub entity_kind: Option<String>,
+    pub entity_country: Option<String>,
+    pub entity_postal_code: Option<String>,
 }

@@ -73,13 +73,16 @@ impl RecursiveShareholders {
                 None => (None, None),
             };
 
+            let doi = Some("00/00/0000".to_string()); // TODO THIS PROPERLY
+
             let child_id = database
-                .insert_company(
+                .insert_entity(
                     &padded_company_house_number,
                     shareholder.name,
                     shareholder.kind,
                     country,
                     postal_code,
+                    doi,
                 )
                 .await?;
             database
@@ -140,8 +143,8 @@ impl Officers {
             let dob = Some("00/00/0000".to_string()); // TODO THIS PROPERLY
 
             let individual_id = database
-                .insert_individual(
-                    officer_company_house_number,
+                .insert_entity(
+                    &officer_company_house_number,
                     officer.name,
                     officer.nationality,
                     country,
