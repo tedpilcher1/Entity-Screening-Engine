@@ -3,10 +3,10 @@
 
 ## To do:
 - React frontend
-- Treat individuals and companies the same
 - Treat duplicates as one
 - Add functionality to find officers
 - Proper Logging
+- Merge officer and shareholder table into single called relationship
 
 ## Requirements to run
 - Docker running
