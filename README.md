@@ -7,6 +7,7 @@
 - Add functionality to find officers
 - Proper Logging
 - Merge officer and shareholder table into single called relationship
+- Create EndpointRequest enum and handle like job, in single place etc 
 
 ## Requirements to run
 - Docker running
