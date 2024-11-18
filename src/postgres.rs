@@ -189,6 +189,35 @@ impl Database {
 
         Ok(())
     }
+
+    pub async fn get_officers(
+        &mut self,
+        company_id: &Uuid,
+    ) -> Result<Vec<EntityDetails>, failure::Error> {
+        let query = r#"
+            SELECT 
+                c.id AS entity_id,
+                c.company_house_id AS company_house_id,
+                c.name AS entity_name,
+                c.kind as entity_kind,
+                c.country as entity_country,
+                c.postal_code as entity_postal_code,
+                c.date_of_origin as entity_date_of_origin
+            FROM 
+                officer of
+            INNER JOIN 
+                entity c ON of.entity_id = c.id
+            WHERE 
+                of.company_id = $1;
+        "#;
+
+        let officers: Vec<EntityDetails> = sqlx::query_as::<_, EntityDetails>(query)
+            .bind(company_id)
+            .fetch_all(&mut self.conn)
+            .await?;
+
+        Ok(officers)
+    }
 }
 
 #[derive(Debug, FromRow, Serialize, Deserialize)]

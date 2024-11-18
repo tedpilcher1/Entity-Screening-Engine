@@ -6,7 +6,7 @@ use actix_web::{web, App, HttpResponse, HttpServer, Responder};
 use serde::{Deserialize, Serialize};
 use uuid::Uuid;
 use Company_Investigation::{
-    jobs::{Job, RecursiveShareholders},
+    jobs::{Job, Officers, RecursiveShareholders},
     postgres::{Database, EntityDetails},
     pulsar::PulsarClient,
 };
@@ -23,13 +23,26 @@ async fn iteratively_get_shareholders(
 
     while let Some((current_id, parent_index)) = stack.pop() {
         let entity_details = database.get_shareholders(&current_id).await?;
-        
+
         for entity in entity_details {
             let entity_id = entity.entity_id;
+
+            let officers_details = database.get_officers(&entity_id).await?;
+            let mut officers = vec![];
+
+            for officer in officers_details {
+                let new_officer = Entity {
+                    entity_details: officer,
+                    shareholders: vec![],
+                    officers: vec![],
+                };
+                officers.push(new_officer);
+            }
 
             let new_entity = Entity {
                 entity_details: entity,
                 shareholders: vec![], // Start with empty shareholders
+                officers,
             };
 
             // Push the company's ID and its index in the result vector
@@ -123,6 +136,7 @@ struct CompanyShareholdersResponse {
 struct Entity {
     entity_details: EntityDetails,
     shareholders: Vec<Entity>,
+    officers: Vec<Entity>,
 }
 
 #[actix_web::main]
