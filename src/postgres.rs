@@ -1,7 +1,7 @@
 use chrono::Utc;
 use serde::{Deserialize, Serialize};
 use sqlx::postgres::PgConnection;
-use sqlx::{query, Connection, FromRow};
+use sqlx::{query, query_scalar, Connection, FromRow};
 use uuid::Uuid;
 
 const DB_URL: &str = "postgres://localhost/postgres";
@@ -96,6 +96,28 @@ impl Database {
         Ok(())
     }
 
+    pub async fn entity_exists_for_check(
+        &mut self,
+        check_id: &Uuid,
+        company_house_number: &String,
+    ) -> Result<Option<Uuid>, failure::Error> {
+        let entity_id = sqlx::query_scalar::<_, Uuid>(
+            r#"
+            SELECT e.id
+            FROM entity e
+            JOIN checkEntityMap cem ON e.id = cem.entity_id
+            WHERE cem.check_id = $1
+            AND e.company_house_id = $2
+            "#,
+        )
+        .bind(check_id)
+        .bind(company_house_number)
+        .fetch_optional(&mut self.conn)
+        .await?;
+
+        Ok(entity_id)
+    }
+
     pub async fn insert_check(&mut self) -> Result<Uuid, failure::Error> {
         let id = Uuid::new_v4();
         let started_at = Utc::now().to_string();
@@ -114,8 +136,17 @@ impl Database {
         company_house_id: &String,
         check_id: &Uuid,
     ) -> Result<Uuid, failure::Error> {
-        self.insert_entity_internal(company_house_id, check_id, None, None, None, None, None, true)
-            .await
+        self.insert_entity_internal(
+            company_house_id,
+            check_id,
+            None,
+            None,
+            None,
+            None,
+            None,
+            true,
+        )
+        .await
     }
 
     pub async fn insert_entity(
@@ -152,25 +183,32 @@ impl Database {
         date_of_origin: Option<String>,
         is_root: bool,
     ) -> Result<Uuid, failure::Error> {
-        let id: Uuid = Uuid::new_v4();
-
-        query("INSERT INTO entity (id, company_house_id, name, kind, country, postal_code, date_of_origin, is_root) VALUES ($1, $2, $3, $4, $5, $6, $7, $8)")
-            .bind(id)
-            .bind(company_house_id)
-            .bind(name)
-            .bind(kind)
-            .bind(country)
-            .bind(postal_code)
-            .bind(date_of_origin)
-            .bind(is_root)
-            .execute(&mut self.conn)
-            .await?;
-
-        query("INSERT INTO checkEntityMap (check_id, entity_id) VALUES ($1, $2)")
-        .bind(check_id)
-        .bind(id)
-        .execute(&mut self.conn)
-        .await?;
+        let id = match self
+            .entity_exists_for_check(check_id, company_house_id)
+            .await?
+        {
+            Some(id) => id,
+            None => {
+                let new_id = Uuid::new_v4();
+                query("INSERT INTO entity (id, company_house_id, name, kind, country, postal_code, date_of_origin, is_root) VALUES ($1, $2, $3, $4, $5, $6, $7, $8)")
+                .bind(new_id)
+                .bind(company_house_id)
+                .bind(name)
+                .bind(kind)
+                .bind(country)
+                .bind(postal_code)
+                .bind(date_of_origin)
+                .bind(is_root)
+                .execute(&mut self.conn)
+                .await?;
+                query("INSERT INTO checkEntityMap (check_id, entity_id) VALUES ($1, $2)")
+                    .bind(check_id)
+                    .bind(new_id)
+                    .execute(&mut self.conn)
+                    .await?;
+                new_id
+            }
+        };
 
         Ok(id)
     }

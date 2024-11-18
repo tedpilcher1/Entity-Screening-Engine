@@ -87,7 +87,9 @@ async fn start_get_shareholders_task(
     depth: i32,
     get_officers: bool,
 ) -> Result<Uuid, failure::Error> {
-    let root_profile_id = database.insert_root_entity(&company_house_number, &check_id).await?;
+    let root_profile_id = database
+        .insert_root_entity(&company_house_number, &check_id)
+        .await?;
     let pulsar_client = PulsarClient::new().await;
     let mut producer = pulsar_client.create_producer().await;
 
@@ -111,8 +113,11 @@ async fn shareholders(params: web::Path<(String, i32, bool)>) -> impl Responder 
     let mut database: Database = Database::connect()
         .await
         .expect("Should be able to connect to db");
-    
-    let check_id = database.insert_check().await.expect("should be able to create check");
+
+    let check_id = database
+        .insert_check()
+        .await
+        .expect("should be able to create check");
 
     match start_get_shareholders_task(
         &mut database,

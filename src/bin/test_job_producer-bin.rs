@@ -13,9 +13,15 @@ async fn simulate_find_shareholders_endpoint() {
 
     let mut conn = Database::connect().await.unwrap();
 
-    let check_id = conn.insert_check().await.expect("should be able to create check");
+    let check_id = conn
+        .insert_check()
+        .await
+        .expect("should be able to create check");
 
-    let parent_id = conn.insert_root_entity(&company_id, &check_id).await.unwrap();
+    let parent_id = conn
+        .insert_root_entity(&company_id, &check_id)
+        .await
+        .unwrap();
 
     let job = Job::RecursiveShareholders(RecursiveShareholders {
         parent_id,
