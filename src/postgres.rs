@@ -65,20 +65,24 @@ impl Database {
         Ok(id)
     }
 
-    pub async fn insert_entity(&mut self, entity: &Entity, check_id: Uuid) -> Result<Uuid, failure::Error> {
-        
-        match self.get_existing_entity_id(&check_id, &entity.company_house_number).await? {
+    pub async fn insert_entity(
+        &mut self,
+        entity: &Entity,
+        check_id: Uuid,
+    ) -> Result<Uuid, failure::Error> {
+        match self
+            .get_existing_entity_id(&check_id, &entity.company_house_number)
+            .await?
+        {
             Some(id) => return Ok(id),
-            None => {},
+            None => {}
         }
 
         self.conn.transaction(|conn| {
-            insert_into(entity::table)
-                .values(entity)
-                .execute(conn)?;
+            insert_into(entity::table).values(entity).execute(conn)?;
 
             insert_into(check_entity_map::table)
-                .values(& CheckEntityMap{
+                .values(&CheckEntityMap {
                     check_id,
                     entity_id: entity.id,
                 })
@@ -86,7 +90,7 @@ impl Database {
 
             diesel::result::QueryResult::Ok(())
         })?;
-        
+
         Ok(entity.id)
     }
 
@@ -101,19 +105,26 @@ impl Database {
         Ok(())
     }
 
-    pub async fn get_relations(&mut self, entity_id: Uuid, relationship_kind: RelationshipKind) -> Result<Vec<Entity>, failure::Error> {
+    pub async fn get_relations(
+        &mut self,
+        entity_id: Uuid,
+        relationship_kind: RelationshipKind,
+    ) -> Result<Vec<Entity>, failure::Error> {
         let relations = entity::table
             .inner_join(relationship::table.on(relationship::parent_id.eq(entity::id)))
             .filter(relationship::child_id.eq(entity_id))
             .filter(relationship::kind.eq(relationship_kind))
             .select(entity::all_columns)
             .load::<Entity>(&mut self.conn)?;
-    
+
         Ok(relations)
     }
 
-    pub async fn get_existing_entity_id(&mut self, check_id: &Uuid, company_house_number: &String) -> Result<Option<Uuid>, failure::Error> {
-
+    pub async fn get_existing_entity_id(
+        &mut self,
+        check_id: &Uuid,
+        company_house_number: &String,
+    ) -> Result<Option<Uuid>, failure::Error> {
         let entity_id = entity::table
             .inner_join(check_entity_map::table.on(check_entity_map::entity_id.eq(entity::id)))
             .filter(check_entity_map::check_id.eq(check_id))
@@ -121,7 +132,7 @@ impl Database {
             .select(entity::id)
             .first::<Uuid>(&mut self.conn)
             .optional()?;
-        
+
         Ok(entity_id)
     }
 }
