@@ -1,4 +1,5 @@
 use futures::TryStreamExt;
+use log::{info, warn};
 
 use crate::{
     jobs::Job,
@@ -23,18 +24,16 @@ impl Worker {
         })
     }
     // TODO: negative ack
-    pub async fn do_work(&mut self) -> Result<(), failure::Error> {
-        while let Some(msg) = self.consumer.internal_consumer.try_next().await? {
+    pub async fn do_work(&mut self) {
+        // TODO: remove .expect(...) below
+        while let Some(msg) = self.consumer.internal_consumer.try_next().await.expect("Should be able to wait for new message.") {
             let job = match msg.deserialize() {
-                Ok(data) => data,
+                Ok(data) => {data},
                 Err(e) => {
-                    // TODO log error
-                    println!("ERROR deseralizing");
-                    todo!()
+                    warn!("Couldn't deseralize job, error: {:?}.", e);
+                    continue;
                 }
             };
-
-            println!("{:?}", job);
 
             let job_result = match job {
                 Job::RecursiveShareholders(job) => {
@@ -45,17 +44,18 @@ impl Worker {
 
             match job_result {
                 // TODO: log + metrics
-                Ok(_) => {}
+                Ok(_) => {
+                    info!("Job completed successfully")
+                }
                 Err(e) => {
-                    println!("{:?}", e)
+                    warn!("Job had and error, error: {:?}", e)
                 }
             }
 
             match self.consumer.internal_consumer.ack(&msg).await {
                 Ok(_) => {}
-                Err(_) => {} // TODO: log and move on, potentially retry x times then give up
+                Err(e) => {warn!("Couldn't acknowledge message, error: {:?}", e)}
             }
         }
-        Ok(())
     }
 }
