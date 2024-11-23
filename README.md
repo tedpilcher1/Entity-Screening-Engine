@@ -2,12 +2,13 @@
 
 
 ## To do:
+- Create new service to handle tracking tasks/jobs, recording duration, completion, metrics etc (could be used for costing too)
 - React frontend
-- Treat duplicates as one
-- Add functionality to find officers
+- Treat duplicates as one (this might be done?), perhaps the relationship part isn't
 - Proper Logging
 - Merge officer and shareholder table into single called relationship
-- Create EndpointRequest enum and handle like job, in single place etc 
+- Create EndpointRequest enum and handle like job, in single place etc
+- Refactor endpoints to use params rather than embedding data in url
 
 ## Requirements to run
 - Docker running
