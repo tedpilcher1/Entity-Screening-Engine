@@ -26,9 +26,15 @@ impl Worker {
     // TODO: negative ack
     pub async fn do_work(&mut self) {
         // TODO: remove .expect(...) below
-        while let Some(msg) = self.consumer.internal_consumer.try_next().await.expect("Should be able to wait for new message.") {
+        while let Some(msg) = self
+            .consumer
+            .internal_consumer
+            .try_next()
+            .await
+            .expect("Should be able to wait for new message.")
+        {
             let job = match msg.deserialize() {
-                Ok(data) => {data},
+                Ok(data) => data,
                 Err(e) => {
                     warn!("Couldn't deseralize job, error: {:?}.", e);
                     continue;
@@ -54,7 +60,9 @@ impl Worker {
 
             match self.consumer.internal_consumer.ack(&msg).await {
                 Ok(_) => {}
-                Err(e) => {warn!("Couldn't acknowledge message, error: {:?}", e)}
+                Err(e) => {
+                    warn!("Couldn't acknowledge message, error: {:?}", e)
+                }
             }
         }
     }
