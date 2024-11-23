@@ -1,4 +1,4 @@
-# Screening Engine
+# Entity Screening Engine
 
 
 ## To do:
