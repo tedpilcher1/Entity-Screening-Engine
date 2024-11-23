@@ -18,7 +18,7 @@ impl Worker {
         let pulsar_client = PulsarClient::new().await;
 
         Ok(Self {
-            database: Database::connect().await?,
+            database: Database::connect()?,
             producer: pulsar_client.create_producer().await,
             consumer: pulsar_client.create_consumer().await,
         })

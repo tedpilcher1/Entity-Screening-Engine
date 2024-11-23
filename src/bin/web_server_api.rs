@@ -1,152 +1,111 @@
-use std::cmp::min;
-
+use chrono::NaiveDateTime;
 use dotenv::dotenv;
 
-use actix_web::{web, App, HttpResponse, HttpServer, Responder};
+use actix_web::{get, post, web, App, HttpResponse, HttpServer, Responder};
+use log::warn;
+use pulsar::producer;
 use serde::{Deserialize, Serialize};
 use uuid::Uuid;
 use Company_Investigation::{
-    jobs::{Job, Officers, RecursiveShareholders},
-    postgres::{Database, EntityDetails},
-    pulsar::PulsarClient,
+    jobs::{Job, Officers, RecursiveShareholders}, model::RelationshipKind, postgres::Database, postgres_types::Entity, pulsar::PulsarClient, schema::entity
 };
 
+type OfficerDepth = i32;
+type ShareholderDepth = i32;
 const MAX_DEPTH: i32 = 5;
 
-async fn iteratively_get_shareholders(
-    database: &mut Database,
-    root_company_id: &Uuid,
-) -> Result<Vec<Entity>, failure::Error> {
-    let mut result: Vec<Entity> = vec![];
-    // Store indices instead of trying to clone vectors
-    let mut stack: Vec<(Uuid, usize)> = vec![(root_company_id.clone(), 0)];
+fn get_entity_response(check_id: Uuid) -> Result<EntityResponse, failure::Error> {
 
-    while let Some((current_id, parent_index)) = stack.pop() {
-        let entity_details = database.get_shareholders(&current_id).await?;
+    let mut database = Database::connect()?;
+    let mut entities: Vec<EntityWithRelations> = vec![];
+    let check = database.get_check(check_id)?;
+    let check_entities = database.get_entities(check_id)?;
 
-        for entity in entity_details {
-            let entity_id = entity.entity_id;
-
-            let officers_details = database.get_officers(&entity_id).await?;
-            let mut officers = vec![];
-
-            for officer in officers_details {
-                let new_officer = Entity {
-                    entity_details: officer,
-                    shareholders: vec![],
-                    officers: vec![],
-                };
-                officers.push(new_officer);
-            }
-
-            let new_entity = Entity {
-                entity_details: entity,
-                shareholders: vec![], // Start with empty shareholders
-                officers,
-            };
-
-            // Push the company's ID and its index in the result vector
-            let current_index = result.len();
-            stack.push((entity_id, current_index));
-
-            if parent_index < result.len() {
-                // Add this company as a shareholder to its parent
-                result[parent_index].shareholders.push(new_entity);
-            } else {
-                // This is a root level company
-                result.push(new_entity);
-            }
-        }
+    for entity in check_entities {
+        let officers = database.get_relations(entity.id, RelationshipKind::Officer)?;
+        let shareholders = database.get_relations(entity.id, RelationshipKind::Shareholder)?;
+        entities.push(EntityWithRelations {
+            entity,
+            officers,
+            shareholders,
+        });
     }
 
-    Ok(result)
-}
-
-async fn get_shareholders(root_company_id: web::Path<Uuid>) -> impl Responder {
-    let mut database = Database::connect()
-        .await
-        .expect("Should be able to connect to db");
-    let shareholders = match iteratively_get_shareholders(&mut database, &root_company_id).await {
-        Ok(shareholders) => shareholders,
-        Err(e) => {
-            println!("{:?}", e);
-            vec![]
-        }
-    };
-
-    HttpResponse::Ok().json(CompanyShareholdersResponse {
-        root_company_id: *root_company_id,
-        shareholders,
+    Ok(EntityResponse {
+        entities,
+        started_at: check.started_at,
+        completed_at: None, // TODO once check handler/tracker service implemented
     })
 }
 
-async fn start_get_shareholders_task(
-    database: &mut Database,
-    company_house_number: String,
-    check_id: Uuid,
-    depth: i32,
-    get_officers: bool,
-) -> Result<Uuid, failure::Error> {
-    let root_profile_id = database
-        .insert_root_entity(&company_house_number, &check_id)
-        .await?;
-    let pulsar_client = PulsarClient::new().await;
-    let mut producer = pulsar_client.create_producer().await;
-
-    let job = Job::RecursiveShareholders(RecursiveShareholders {
-        parent_id: root_profile_id,
-        check_id,
-        parent_company_id: company_house_number,
-        remaining_depth: min(depth, MAX_DEPTH),
-        get_officers,
-    });
-
-    producer.produce_message(job).await?;
-
-    Ok(root_profile_id)
+#[derive(Serialize, Deserialize)]
+struct EntityWithRelations {
+    entity: Entity,
+    officers: Vec<Entity>,
+    shareholders: Vec<Entity>,
 }
 
-async fn shareholders(params: web::Path<(String, i32, bool)>) -> impl Responder {
-    let (company_house_number, depth, get_officers) = (params.0.clone(), params.1, params.2);
-    let padded_company_house_number = format!("{:0>8}", company_house_number);
+#[derive(Serialize, Deserialize)]
+struct EntityResponse {
+    entities: Vec<EntityWithRelations>,
+    started_at: NaiveDateTime,
+    completed_at: Option<NaiveDateTime>, 
+}
 
-    let mut database: Database = Database::connect()
-        .await
-        .expect("Should be able to connect to db");
-
-    let check_id = database
-        .insert_check()
-        .await
-        .expect("should be able to create check");
-
-    match start_get_shareholders_task(
-        &mut database,
-        padded_company_house_number,
-        check_id,
-        depth,
-        get_officers,
-    )
-    .await
-    {
-        Ok(root_profile_id) => HttpResponse::Ok().json(root_profile_id),
+#[get("/get_relations")]
+async fn get_relations_endpoint(params: web::Query<Uuid>) -> impl Responder {
+    let check_id = params.into_inner();
+    match get_entity_response(check_id) {
+        Ok(entity_response) => HttpResponse::Ok().json(entity_response),
         Err(e) => {
-            println!("{:?}", e); // TODO, replace with proper logging
-            HttpResponse::InternalServerError().into()
+            warn!("Failed to get relations: {}", e);
+            HttpResponse::InternalServerError().json(format!("Failed to get relations for check {}", check_id))
         }
     }
 }
 
-#[derive(Serialize, Deserialize)]
-struct CompanyShareholdersResponse {
-    root_company_id: Uuid,
-    shareholders: Vec<Entity>,
+async fn start_relations_check(company_house_number: String, officer_depth: OfficerDepth, shareholder_depth: ShareholderDepth) -> Result<Uuid, failure::Error> {
+
+    let mut database = Database::connect()?;
+    let pulsar_client = PulsarClient::new().await;
+    let mut producer = pulsar_client.create_producer().await;
+    
+    let check_id = database.insert_check()?;    
+    let entity_id = database.insert_entity(&Entity::create_root(), check_id)?;
+
+    if officer_depth > 0 {
+        producer.produce_message(Job::Officers(Officers {
+            entity_id,
+            check_id,
+            company_house_number: company_house_number.clone(),
+        })).await?;
+    }
+
+    if shareholder_depth > 0 {
+        producer.produce_message(Job::RecursiveShareholders(RecursiveShareholders {
+            parent_id: entity_id,
+            check_id,
+            parent_company_number: company_house_number,
+            remaining_depth: shareholder_depth,
+            get_officers: officer_depth > 0,
+        })).await?;
+    }
+
+
+    Ok(check_id)
 }
 
-#[derive(Serialize, Deserialize)]
-struct Entity {
-    entity_details: EntityDetails,
-    shareholders: Vec<Entity>,
-    officers: Vec<Entity>,
+#[post("/start_relations_check")]
+async fn start_relations_check_endpoint(params: web::Query<(String, OfficerDepth, ShareholderDepth)>) -> impl Responder {
+    let (company_house_number, officer_depth, shareholder_depth) = params.into_inner();
+
+   match start_relations_check(company_house_number.clone(), officer_depth, shareholder_depth).await {
+        Ok(check_id) => HttpResponse::Ok().json(check_id),
+        Err(e) => {
+            warn!("Failed to get relations: {}", e);
+            HttpResponse::InternalServerError().json(format!("Failed to start relation check for entity with number {}", company_house_number))
+        }
+   }
 }
 
 #[actix_web::main]
@@ -154,14 +113,8 @@ async fn main() -> std::io::Result<()> {
     dotenv().ok();
     HttpServer::new(|| {
         App::new()
-            .service(
-                web::resource("/get_shareholders/{root_profile_id}")
-                    .route(web::get().to(get_shareholders)),
-            )
-            .service(
-                web::resource("/shareholders/{company_house_number}/{depth}/{get_officers}")
-                    .route(web::post().to(shareholders)),
-            )
+            .service(get_relations_endpoint)
+            .service(start_relations_check_endpoint)
     })
     .bind("127.0.0.1:8080")?
     .run()

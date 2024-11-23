@@ -4,7 +4,9 @@ use uuid::Uuid;
 
 use crate::{
     company_house_apis::{get_company_officers, get_company_shareholders},
+    model::RelationshipKind,
     postgres::Database,
+    postgres_types::{Entity, Relationship},
     pulsar::PulsarProducer,
 };
 
@@ -36,7 +38,7 @@ impl DeserializeMessage for Job {
 pub struct RecursiveShareholders {
     pub parent_id: Uuid,
     pub check_id: Uuid,
-    pub parent_company_id: String,
+    pub parent_company_number: String,
     pub remaining_depth: i32,
     pub get_officers: bool,
 }
@@ -52,50 +54,26 @@ impl RecursiveShareholders {
         // -- store in db
         // -- produce message
 
-        let shareholders_list = get_company_shareholders(&self.parent_company_id).await?;
-
-        // TODO: fix unwrap - but this should really never fail
+        let shareholders_list = get_company_shareholders(&self.parent_company_number).await?;
         for shareholder in shareholders_list.items.unwrap_or_default() {
-            let shareholder_identification = match shareholder.identification {
-                Some(identification) => identification,
-                None => return Ok(()), // graceful finish
+            let entity: Result<Entity, ()> = (shareholder, false).try_into();
+            let entity = match entity {
+                Ok(entity) => entity,
+                Err(_) => return Ok(()),
             };
 
-            let shareholder_registration_number =
-                match shareholder_identification.registration_number {
-                    Some(registration_numer) => registration_numer,
-                    None => return Ok(()),
-                };
-
-            let padded_company_house_number = format!("{:0>8}", shareholder_registration_number);
-
-            let (country, postal_code) = match shareholder.address {
-                Some(address) => (address.country, address.postal_code),
-                None => (None, None),
-            };
-
-            let doi = Some("00/00/0000".to_string()); // TODO THIS PROPERLY
-
-            let child_id = database
-                .insert_entity(
-                    &padded_company_house_number,
-                    &self.check_id,
-                    shareholder.name,
-                    shareholder.kind,
-                    country,
-                    postal_code,
-                    doi,
-                )
-                .await?;
-            database
-                .insert_shareholder(self.parent_id, child_id)
-                .await?;
+            let child_id = database.insert_entity(&entity, self.check_id)?;
+            database.insert_relationship(Relationship {
+                parent_id: entity.id,
+                child_id,
+                kind: RelationshipKind::Shareholder,
+            })?;
 
             if self.get_officers {
                 let job = Job::Officers(Officers {
-                    company_id: child_id,
+                    entity_id: child_id,
                     check_id: self.check_id,
-                    company_house_number: shareholder_registration_number.clone(),
+                    company_house_number: entity.company_house_number.clone(),
                 });
 
                 producer.produce_message(job).await?;
@@ -105,7 +83,7 @@ impl RecursiveShareholders {
                 let job = Job::RecursiveShareholders(RecursiveShareholders {
                     parent_id: child_id,
                     check_id: self.check_id,
-                    parent_company_id: shareholder_registration_number,
+                    parent_company_number: entity.company_house_number,
                     remaining_depth: self.remaining_depth - 1,
                     get_officers: self.get_officers,
                 });
@@ -119,7 +97,7 @@ impl RecursiveShareholders {
 
 #[derive(Serialize, Deserialize, Debug)]
 pub struct Officers {
-    pub company_id: Uuid,
+    pub entity_id: Uuid,
     pub check_id: Uuid,
     pub company_house_number: String,
 }
@@ -130,37 +108,18 @@ impl Officers {
         let officers = get_company_officers(&self.company_house_number).await?;
 
         for officer in officers.items.unwrap_or_default() {
-            let officer_identification = match officer.identification {
-                Some(identification) => identification,
-                None => return Ok(()),
+            let entity: Result<Entity, ()> = (officer, false).try_into();
+            let entity = match entity {
+                Ok(entity) => entity,
+                Err(_) => return Ok(()),
             };
 
-            let officer_company_house_number = match officer_identification.registration_number {
-                Some(company_house_number) => company_house_number,
-                None => return Ok(()),
-            };
-
-            let (country, postal_code) = match officer.address {
-                Some(address) => (address.country, address.postal_code),
-                None => (None, None),
-            };
-
-            let dob = Some("00/00/0000".to_string()); // TODO THIS PROPERLY
-
-            let individual_id = database
-                .insert_entity(
-                    &officer_company_house_number,
-                    &self.check_id,
-                    officer.name,
-                    officer.nationality,
-                    country,
-                    postal_code,
-                    dob,
-                )
-                .await?;
-            database
-                .insert_officer(self.company_id, individual_id, officer.officer_role)
-                .await?;
+            let child_id = database.insert_entity(&entity, self.check_id)?;
+            database.insert_relationship(Relationship {
+                parent_id: entity.id,
+                child_id,
+                kind: RelationshipKind::Officer,
+            })?;
         }
 
         Ok(())

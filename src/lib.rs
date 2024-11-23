@@ -1,9 +1,10 @@
 mod company_house_apis;
 mod company_house_response_types;
 pub mod jobs;
-mod model;
+pub mod model;
 pub mod postgres;
+pub mod postgres_types;
 pub mod pulsar;
-mod schema;
+pub mod schema;
 pub mod types;
 pub mod worker;

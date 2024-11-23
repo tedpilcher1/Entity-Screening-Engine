@@ -41,7 +41,7 @@ diesel::table! {
         id -> Uuid,
         company_house_number -> Text,
         name -> Nullable<Text>,
-        kind -> Nullable<EntityKind>,
+        kind -> EntityKind,
         country -> Nullable<Text>,
         postal_code -> Nullable<Text>,
         date_of_origin -> Nullable<Text>,

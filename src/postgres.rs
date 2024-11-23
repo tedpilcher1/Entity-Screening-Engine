@@ -1,58 +1,24 @@
-use chrono::{NaiveDateTime, Utc};
+use chrono::Utc;
 use diesel::prelude::*;
 use diesel::{insert_into, Connection, PgConnection};
 use uuid::Uuid;
 
-use crate::model::{EntityKind, RelationshipKind};
+use crate::model::RelationshipKind;
+use crate::postgres_types::{Check, CheckEntityMap, Entity, Relationship};
 use crate::schema::{check, check_entity_map, entity, relationship};
-
-#[derive(Debug, Queryable, Insertable)]
-#[diesel(table_name = entity)]
-pub struct Entity {
-    id: Uuid,
-    company_house_number: String,
-    name: Option<String>,
-    kind: Option<EntityKind>,
-    country: Option<String>,
-    postal_code: Option<String>,
-    date_of_origin: Option<String>,
-    is_root: bool,
-}
-
-#[derive(Debug, Queryable, Insertable)]
-#[diesel(table_name = check_entity_map)]
-pub struct CheckEntityMap {
-    check_id: Uuid,
-    entity_id: Uuid,
-}
-
-#[derive(Debug, Queryable, Insertable)]
-#[diesel(table_name = relationship)]
-pub struct Relationship {
-    parent_id: Uuid,
-    child_id: Uuid,
-    kind: RelationshipKind,
-}
-
-#[derive(Debug, Queryable, Insertable)]
-#[diesel(table_name = check)]
-pub struct Check {
-    id: Uuid,
-    started_at: NaiveDateTime,
-}
 
 pub struct Database {
     conn: PgConnection,
 }
 
 impl Database {
-    pub async fn connect() -> Result<Self, failure::Error> {
+    pub fn connect() -> Result<Self, failure::Error> {
         let database_url = std::env::var("DATABASE_URL")?;
         let conn = PgConnection::establish(&database_url)?;
         Ok(Self { conn })
     }
 
-    pub async fn insert_check(&mut self) -> Result<Uuid, failure::Error> {
+    pub fn insert_check(&mut self) -> Result<Uuid, failure::Error> {
         let id = Uuid::new_v4();
 
         insert_into(check::table)
@@ -65,15 +31,12 @@ impl Database {
         Ok(id)
     }
 
-    pub async fn insert_entity(
+    pub fn insert_entity(
         &mut self,
         entity: &Entity,
         check_id: Uuid,
     ) -> Result<Uuid, failure::Error> {
-        match self
-            .get_existing_entity_id(&check_id, &entity.company_house_number)
-            .await?
-        {
+        match self.get_existing_entity_id(&check_id, &entity.company_house_number)? {
             Some(id) => return Ok(id),
             None => {}
         }
@@ -94,18 +57,18 @@ impl Database {
         Ok(entity.id)
     }
 
-    pub async fn insert_relationship(
+    pub fn insert_relationship(
         &mut self,
-        relationship: &Relationship,
+        relationship: Relationship,
     ) -> Result<(), failure::Error> {
         insert_into(relationship::table)
-            .values(relationship)
+            .values(&relationship)
             .execute(&mut self.conn)?;
 
         Ok(())
     }
 
-    pub async fn get_relations(
+    pub fn get_relations(
         &mut self,
         entity_id: Uuid,
         relationship_kind: RelationshipKind,
@@ -120,7 +83,7 @@ impl Database {
         Ok(relations)
     }
 
-    pub async fn get_existing_entity_id(
+    fn get_existing_entity_id(
         &mut self,
         check_id: &Uuid,
         company_house_number: &String,
@@ -134,5 +97,36 @@ impl Database {
             .optional()?;
 
         Ok(entity_id)
+    }
+
+    pub fn get_entity(&mut self, entity_id: Uuid) -> Result<Entity, failure::Error> {
+        let entity = entity::table
+            .filter(entity::id.eq(entity_id))
+            .select(entity::all_columns)
+            .first::<Entity>(&mut self.conn)
+            .optional()?
+            .ok_or_else(|| failure::format_err!("Entity not found with id: {}", entity_id))?;
+
+        Ok(entity)
+    }
+
+    pub fn get_entities(&mut self, check_id: Uuid) -> Result<Vec<Entity>, failure::Error> {
+        let entities = entity::table
+            .inner_join(check_entity_map::table.on(check_entity_map::entity_id.eq(entity::id)))
+            .filter(check_entity_map::check_id.eq(check_id))
+            .select(entity::all_columns)
+            .load::<Entity>(&mut self.conn)?;
+
+        Ok(entities)
+    }
+
+    pub fn get_check(&mut self, check_id: Uuid) -> Result<Check, failure::Error> {
+        let check = check::table
+            .filter(check::id.eq(check_id))
+            .first::<Check>(&mut self.conn)
+            .optional()?
+            .ok_or_else(|| failure::format_err!("Check not found with id: {}", check_id))?;
+
+        Ok(check)
     }
 }

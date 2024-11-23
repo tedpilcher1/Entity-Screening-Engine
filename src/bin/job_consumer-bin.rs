@@ -6,5 +6,5 @@ async fn main() {
     dotenv().ok();
     env_logger::init();
     let mut worker = Worker::new().await.unwrap();
-    worker.do_work().await.unwrap();
+    worker.do_work().await;
 }

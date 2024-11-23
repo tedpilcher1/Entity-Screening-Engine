@@ -2,6 +2,7 @@ use diesel::deserialize::{self, FromSql, FromSqlRow};
 use diesel::expression::AsExpression;
 use diesel::pg::{Pg, PgValue};
 use diesel::serialize::{self, IsNull, Output, ToSql};
+use serde::{Deserialize, Serialize};
 use std::io::Write;
 
 #[derive(Debug, Clone, Copy, AsExpression, FromSqlRow)]
@@ -31,9 +32,10 @@ impl FromSql<crate::schema::sql_types::RelationshipKind, Pg> for RelationshipKin
     }
 }
 
-#[derive(Debug, AsExpression, FromSqlRow)]
+#[derive(Debug, AsExpression, FromSqlRow, Default, Serialize, Deserialize)]
 #[diesel(sql_type = crate::schema::sql_types::EntityKind)]
 pub enum EntityKind {
+    #[default]
     Company,
     Individual,
 }
@@ -55,5 +57,13 @@ impl FromSql<crate::schema::sql_types::EntityKind, Pg> for EntityKind {
             b"individual" => Ok(EntityKind::Individual),
             _ => Err("Unrecognized enum variant".into()),
         }
+    }
+}
+
+// TODO: this needs proper mapping between returned kinds
+impl From<Option<String>> for EntityKind {
+    fn from(_kind: Option<String>) -> Self {
+        Self::Company
+        // should default to company
     }
 }
