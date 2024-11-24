@@ -3,11 +3,10 @@
 
 ## To do:
 - Create new service to handle tracking tasks/jobs, recording duration, completion, metrics etc (could be used for costing too)
+- Create service to handle risk calculation
+- Create service for LLM integration, document summary, risk breakdown etc
 - React frontend (todo when depressed)
-- Treat duplicates as one (this might be done?), perhaps the relationship part isn't
-- Merge officer and shareholder table into single called relationship
-- Create EndpointRequest enum and handle like job, in single place etc
-- Refactor endpoints to use params rather than embedding data in url
+
 
 ## Requirements to run
 - Docker running
