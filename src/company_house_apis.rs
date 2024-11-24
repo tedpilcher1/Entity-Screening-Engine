@@ -40,9 +40,7 @@ pub async fn get_company(name: &String) -> Result<CompanySearchResponse, failure
     Ok(company_search_response)
 }
 
-pub async fn get_officers(
-    company_number: &String,
-) -> Result<OfficerListResponse, failure::Error> {
+pub async fn get_officers(company_number: &String) -> Result<OfficerListResponse, failure::Error> {
     let url = format!(
         "https://api.company-information.service.gov.uk/company/{}/officers",
         company_number
@@ -62,9 +60,7 @@ pub async fn get_officers(
     Ok(officer_search_response)
 }
 
-pub async fn get_shareholders(
-    company_number: &String,
-) -> Result<ShareholderList, failure::Error> {
+pub async fn get_shareholders(company_number: &String) -> Result<ShareholderList, failure::Error> {
     let url = format!("https://api.company-information.service.gov.uk/company/{}/persons-with-significant-control", company_number);
 
     // TODO: create own client struct that implements fns in this file, has client as field

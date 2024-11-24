@@ -42,9 +42,7 @@ impl Worker {
             };
 
             let job_result = match job {
-                Job::Shareholders(job) => {
-                    job.do_job(&mut self.database, &mut self.producer).await
-                }
+                Job::Shareholders(job) => job.do_job(&mut self.database, &mut self.producer).await,
                 Job::Officers(job) => job.do_job(&mut self.database, &mut self.producer).await,
             };
 

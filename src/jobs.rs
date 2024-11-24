@@ -1,7 +1,7 @@
+use crate::company_house_apis::get_company;
 use pulsar::{producer, DeserializeMessage, Error as PulsarError, SerializeMessage};
 use serde::{Deserialize, Serialize};
 use uuid::Uuid;
-use crate::company_house_apis::get_company;
 
 use crate::models::{Entity, Relationship};
 use crate::{
@@ -90,7 +90,11 @@ pub struct Officers {
 }
 
 impl Officers {
-    pub async fn do_job(&self, database: &mut Database, producer: &mut PulsarProducer,) -> Result<(), failure::Error> {
+    pub async fn do_job(
+        &self,
+        database: &mut Database,
+        producer: &mut PulsarProducer,
+    ) -> Result<(), failure::Error> {
         let officers = get_officers(&self.company_house_number).await?;
 
         for officer in officers.items.unwrap_or_default() {
@@ -156,7 +160,6 @@ async fn queue_relation_jobs(
     Ok(())
 }
 
-
 // #[derive(Serialize, Deserialize, Debug)]
 // pub struct Companies {
 //     pub compan_name: String,
@@ -172,6 +175,6 @@ async fn queue_relation_jobs(
 //         // store in db
 
 //         // TODO: do some further processing to understand what is most likely match
-//         // could use additional data, e.g. country, postal code, individual or company etc, 
+//         // could use additional data, e.g. country, postal code, individual or company etc,
 //     }
 // }

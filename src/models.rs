@@ -6,8 +6,8 @@ use diesel::prelude::{Insertable, Queryable};
 use diesel::serialize::{self, IsNull, Output, ToSql};
 use diesel::Selectable;
 use serde::{Deserialize, Serialize};
-use uuid::Uuid;
 use std::io::Write;
+use uuid::Uuid;
 
 use crate::company_house_response_types::{CompanyItem, OfficerListItem, ShareholderListItem};
 
@@ -73,7 +73,6 @@ impl From<Option<String>> for Entitykind {
         // should default to company
     }
 }
-
 
 #[derive(Queryable, Selectable, Default, Insertable, Serialize, Deserialize)]
 #[diesel(table_name = crate::schema::entity)]
