@@ -89,10 +89,11 @@ pub struct Entity {
 }
 
 impl Entity {
-    pub fn create_root() -> Self {
+    pub fn create_root(company_house_number: String) -> Self {
         Self {
             id: Uuid::new_v4(),
             is_root: true,
+            company_house_number,
             ..Default::default()
         }
     }
@@ -115,6 +116,8 @@ impl TryFrom<(ShareholderListItem, bool)> for Entity {
             Some(registration_numer) => registration_numer,
             None => return Err(()),
         };
+
+        let company_house_number = format!("{:0>8}", company_house_number);
 
         let (country, postal_code) = match shareholder.address {
             Some(address) => (address.country, address.postal_code),
@@ -153,6 +156,8 @@ impl TryFrom<(OfficerListItem, bool)> for Entity {
             Some(registration_numer) => registration_numer,
             None => return Err(()),
         };
+
+        let company_house_number = format!("{:0>8}", company_house_number);
 
         let (country, postal_code) = match officer.address {
             Some(address) => (address.country, address.postal_code),

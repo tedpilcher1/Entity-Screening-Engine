@@ -8,11 +8,12 @@ use Company_Investigation::{
 };
 
 async fn simulate_find_shareholders_endpoint() {
-    let company_id = "02627406".to_string();
-    let depth = 3;
+    let company_house_number = "77861".to_string();
 
     let pulsar_client = PulsarClient::new().await;
     let mut producer = pulsar_client.create_producer().await;
+
+    let company_house_number = format!("{:0>8}", company_house_number);
 
     let mut conn = Database::connect().expect("Should be able to connect to db");
     let check_id = conn.insert_check().expect("Should be able to insert check");
@@ -21,6 +22,7 @@ async fn simulate_find_shareholders_endpoint() {
             &Entity {
                 id: Uuid::new_v4(),
                 is_root: true,
+                company_house_number: company_house_number.clone(),
                 ..Default::default()
             },
             check_id,
@@ -30,7 +32,7 @@ async fn simulate_find_shareholders_endpoint() {
     let job = Job::Shareholders(Shareholders {
         parent_id,
         check_id,
-        parent_company_number: company_id,
+        parent_company_number: company_house_number,
         remaining_shareholder_depth: 5,
         remaining_officers_depth: 5,
     });

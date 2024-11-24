@@ -51,4 +51,9 @@ diesel::table! {
     }
 }
 
-diesel::allow_tables_to_appear_in_same_query!(check, check_entity_map, entity, relationship,);
+diesel::allow_tables_to_appear_in_same_query!(
+    check,
+    check_entity_map,
+    entity,
+    relationship,
+);

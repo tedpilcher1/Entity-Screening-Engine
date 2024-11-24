@@ -55,7 +55,7 @@ struct EntityResponse {
     completed_at: Option<NaiveDateTime>,
 }
 
-#[get("/get_relations")]
+#[get("/get_relations/{check_id}")]
 async fn get_relations_endpoint(params: web::Query<Uuid>) -> impl Responder {
     let check_id = params.into_inner();
     match get_entity_response(check_id) {
@@ -76,9 +76,10 @@ async fn start_relations_check(
     let mut database = Database::connect()?;
     let pulsar_client = PulsarClient::new().await;
     let mut producer = pulsar_client.create_producer().await;
+    let company_house_number = format!("{:0>8}", company_house_number);
 
     let check_id = database.insert_check()?;
-    let entity_id = database.insert_entity(&Entity::create_root(), check_id)?;
+    let entity_id = database.insert_entity(&Entity::create_root(company_house_number.clone()), check_id)?;
 
     let validated_officer_depth = min(officer_depth, MAX_DEPTH);
     let validated_shareholder_depth = min(shareholder_depth, MAX_DEPTH);
@@ -110,7 +111,7 @@ async fn start_relations_check(
     Ok(check_id)
 }
 
-#[post("/start_relations_check")]
+#[post("/start_relations_check/{company_house_number}/{officer_depth}/{shareholder_depth}")]
 async fn start_relations_check_endpoint(
     params: web::Query<(String, OfficerDepth, ShareholderDepth)>,
 ) -> impl Responder {
