@@ -17,7 +17,7 @@ lazy_static! {
     static ref API_KEY: String = env::var("API_KEY").expect("API KEY should be set");
 }
 
-pub async fn get_company(name: &String) {
+pub async fn get_company(name: &String) -> Result<CompanySearchResponse, failure::Error> {
     let client = Client::new();
 
     let mut params = HashMap::new();
@@ -26,7 +26,7 @@ pub async fn get_company(name: &String) {
     let mut headers = header::HeaderMap::new();
     headers.insert(
         "Authorization",
-        header::HeaderValue::from_str(&format!("{}", API_KEY.as_str())).unwrap(),
+        header::HeaderValue::from_str(&format!("{}", API_KEY.as_str()))?,
     );
 
     let response = client
@@ -36,13 +36,11 @@ pub async fn get_company(name: &String) {
         .send()
         .await
         .unwrap();
-    let company_search_response: CompanySearchResponse = response.json().await.unwrap();
-
-    // some work required here to convert the search response into some generic company struct
-    todo!()
+    let company_search_response: CompanySearchResponse = response.json().await?;
+    Ok(company_search_response)
 }
 
-pub async fn get_company_officers(
+pub async fn get_officers(
     company_number: &String,
 ) -> Result<OfficerListResponse, failure::Error> {
     let url = format!(
@@ -64,7 +62,7 @@ pub async fn get_company_officers(
     Ok(officer_search_response)
 }
 
-pub async fn get_company_shareholders(
+pub async fn get_shareholders(
     company_number: &String,
 ) -> Result<ShareholderList, failure::Error> {
     let url = format!("https://api.company-information.service.gov.uk/company/{}/persons-with-significant-control", company_number);

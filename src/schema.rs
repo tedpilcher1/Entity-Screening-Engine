@@ -1,47 +1,38 @@
-use diesel::{allow_tables_to_appear_in_same_query, joinable};
+// @generated automatically by Diesel CLI.
 
 pub mod sql_types {
-    use diesel::{query_builder::QueryId, sql_types::SqlType};
+    #[derive(diesel::query_builder::QueryId, Clone, diesel::sql_types::SqlType)]
+    #[diesel(postgres_type(name = "entitykind"))]
+    pub struct Entitykind;
 
-    #[derive(SqlType, QueryId)]
-    #[diesel(postgres_type(name = "RelationshipKind"))]
-    pub struct RelationshipKind;
-    #[derive(SqlType, QueryId)]
-    #[diesel(postgres_type(name = "EntityKind"))]
-    pub struct EntityKind;
+    #[derive(diesel::query_builder::QueryId, Clone, diesel::sql_types::SqlType)]
+    #[diesel(postgres_type(name = "relationshipkind"))]
+    pub struct Relationshipkind;
 }
 
 diesel::table! {
-    use diesel::sql_types::*;
-    check(id) {
+    check (id) {
         id -> Uuid,
         started_at -> Timestamp,
     }
 }
 
 diesel::table! {
-    use diesel::sql_types::*;
-    check_entity_map(check_id, entity_id) {
+    check_entity_map (check_id, entity_id) {
         check_id -> Uuid,
         entity_id -> Uuid,
     }
 }
 
-joinable!(check_entity_map -> check(check_id));
-allow_tables_to_appear_in_same_query!(check_entity_map, check);
-
-joinable!(check_entity_map -> entity(entity_id));
-allow_tables_to_appear_in_same_query!(check_entity_map, entity);
-
 diesel::table! {
     use diesel::sql_types::*;
-    use super::sql_types::EntityKind;
+    use super::sql_types::Entitykind;
 
-    entity(id) {
+    entity (id) {
         id -> Uuid,
         company_house_number -> Text,
         name -> Nullable<Text>,
-        kind -> EntityKind,
+        kind -> Entitykind,
         country -> Nullable<Text>,
         postal_code -> Nullable<Text>,
         date_of_origin -> Nullable<Text>,
@@ -49,18 +40,20 @@ diesel::table! {
     }
 }
 
-// Parent is x of child
-// i.e. parent is officer of child
-// i.e. parent is shareholder of child
 diesel::table! {
     use diesel::sql_types::*;
-    use super::sql_types::RelationshipKind;
+    use super::sql_types::Relationshipkind;
 
-    relationship(parent_id, child_id) {
+    relationship (parent_id, child_id) {
         parent_id -> Uuid,
         child_id -> Uuid,
-        kind -> RelationshipKind,
+        kind -> Relationshipkind,
     }
 }
-joinable!(relationship -> entity(parent_id));
-allow_tables_to_appear_in_same_query!(entity, relationship);
+
+diesel::allow_tables_to_appear_in_same_query!(
+    check,
+    check_entity_map,
+    entity,
+    relationship,
+);

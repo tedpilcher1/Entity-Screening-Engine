@@ -1,19 +1,21 @@
 use pulsar::{producer, DeserializeMessage, Error as PulsarError, SerializeMessage};
 use serde::{Deserialize, Serialize};
 use uuid::Uuid;
+use crate::company_house_apis::get_company;
 
+use crate::models::{Entity, Relationship};
 use crate::{
-    company_house_apis::{get_company_officers, get_company_shareholders},
-    model::RelationshipKind,
+    company_house_apis::{get_officers, get_shareholders},
+    models::Relationshipkind,
     postgres::Database,
-    postgres_types::{Entity, Relationship},
     pulsar::PulsarProducer,
 };
 
 #[derive(Serialize, Deserialize, Debug)]
 pub enum Job {
-    RecursiveShareholders(RecursiveShareholders),
+    Shareholders(Shareholders),
     Officers(Officers),
+    // Companies(Companies),
 }
 
 impl SerializeMessage for Job {
@@ -35,7 +37,7 @@ impl DeserializeMessage for Job {
 }
 
 #[derive(Serialize, Deserialize, Debug)]
-pub struct RecursiveShareholders {
+pub struct Shareholders {
     pub parent_id: Uuid,
     pub check_id: Uuid,
     pub parent_company_number: String,
@@ -43,13 +45,13 @@ pub struct RecursiveShareholders {
     pub remaining_officers_depth: usize,
 }
 
-impl RecursiveShareholders {
+impl Shareholders {
     pub async fn do_job(
         &self,
         database: &mut Database,
         producer: &mut PulsarProducer,
     ) -> Result<(), failure::Error> {
-        let shareholders_list = get_company_shareholders(&self.parent_company_number).await?;
+        let shareholders_list = get_shareholders(&self.parent_company_number).await?;
         for shareholder in shareholders_list.items.unwrap_or_default() {
             let entity: Result<Entity, ()> = (shareholder, false).try_into();
             let entity = match entity {
@@ -61,10 +63,11 @@ impl RecursiveShareholders {
             database.insert_relationship(Relationship {
                 parent_id: entity.id,
                 child_id,
-                kind: RelationshipKind::Shareholder,
+                kind: Relationshipkind::Shareholder,
             })?;
 
             queue_relation_jobs(
+                producer,
                 self.remaining_officers_depth,
                 self.remaining_shareholder_depth - 1,
                 child_id,
@@ -87,9 +90,8 @@ pub struct Officers {
 }
 
 impl Officers {
-    // TODO: officers returned can be companies, hence shouldn't just assume individual
-    pub async fn do_job(&self, database: &mut Database) -> Result<(), failure::Error> {
-        let officers = get_company_officers(&self.company_house_number).await?;
+    pub async fn do_job(&self, database: &mut Database, producer: &mut PulsarProducer,) -> Result<(), failure::Error> {
+        let officers = get_officers(&self.company_house_number).await?;
 
         for officer in officers.items.unwrap_or_default() {
             let entity: Result<Entity, ()> = (officer, false).try_into();
@@ -102,14 +104,15 @@ impl Officers {
             database.insert_relationship(Relationship {
                 parent_id: entity.id,
                 child_id,
-                kind: RelationshipKind::Officer,
+                kind: Relationshipkind::Officer,
             })?;
 
             queue_relation_jobs(
+                producer,
                 self.remaining_officers_depth - 1,
                 self.remaining_shareholder_depth,
                 entity.id,
-                check_id,
+                self.check_id,
                 entity.company_house_number,
             )
             .await?;
@@ -120,6 +123,7 @@ impl Officers {
 }
 
 async fn queue_relation_jobs(
+    producer: &mut PulsarProducer,
     remaining_officers_depth: usize,
     remaining_shareholder_depth: usize,
     entity_id: Uuid,
@@ -130,7 +134,7 @@ async fn queue_relation_jobs(
         let job = Job::Officers(Officers {
             entity_id,
             check_id,
-            company_house_number,
+            company_house_number: company_house_number.clone(),
             remaining_officers_depth,
             remaining_shareholder_depth,
         });
@@ -139,7 +143,7 @@ async fn queue_relation_jobs(
     }
 
     if remaining_shareholder_depth > 0 {
-        let job = Job::RecursiveShareholders(RecursiveShareholders {
+        let job = Job::Shareholders(Shareholders {
             parent_id: entity_id,
             check_id,
             parent_company_number: company_house_number,
@@ -149,6 +153,25 @@ async fn queue_relation_jobs(
 
         producer.produce_message(job).await?;
     }
-
     Ok(())
 }
+
+
+// #[derive(Serialize, Deserialize, Debug)]
+// pub struct Companies {
+//     pub compan_name: String,
+//     pub check_id: Uuid,
+// }
+
+// impl Companies {
+//     pub async fn do_job(&self, database: &mut Database) -> Result<(), failure::Error> {
+
+//         // using company house api, get potential companies
+//         let companies = get_company(self.compan_name).await?;
+
+//         // store in db
+
+//         // TODO: do some further processing to understand what is most likely match
+//         // could use additional data, e.g. country, postal code, individual or company etc, 
+//     }
+// }

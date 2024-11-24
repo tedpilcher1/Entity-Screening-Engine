@@ -1,9 +1,7 @@
 use uuid::Uuid;
+use dotenv::dotenv;
 use Company_Investigation::{
-    jobs::{Job, RecursiveShareholders},
-    postgres::Database,
-    postgres_types::Entity,
-    pulsar::PulsarClient,
+    jobs::{Job, Shareholders}, models::Entity, postgres::Database, pulsar::PulsarClient
 };
 
 async fn simulate_find_shareholders_endpoint() {
@@ -14,15 +12,6 @@ async fn simulate_find_shareholders_endpoint() {
     let mut producer = pulsar_client.create_producer().await;
 
     let mut conn = Database::connect().expect("Should be able to connect to db");
-
-    // let check_id = conn
-    //     .insert_check()
-    //     .expect("should be able to create check");
-
-    // let parent_id = conn
-    //     .insert_root_entity(&company_id, &check_id)
-    //     .await
-    //     .unwrap();
     let check_id = conn.insert_check().expect("Should be able to insert check");
     let parent_id = conn
         .insert_entity(
@@ -35,12 +24,12 @@ async fn simulate_find_shareholders_endpoint() {
         )
         .expect("Should be able to insert root entity");
 
-    let job = Job::RecursiveShareholders(RecursiveShareholders {
+    let job = Job::Shareholders(Shareholders {
         parent_id,
         check_id,
         parent_company_number: company_id,
-        remaining_depth: depth,
-        get_officers: true,
+        remaining_shareholder_depth: 5,
+        remaining_officers_depth: 5,
     });
 
     producer.produce_message(job).await.unwrap();
@@ -48,5 +37,7 @@ async fn simulate_find_shareholders_endpoint() {
 
 #[tokio::main]
 async fn main() {
+    dotenv().ok();
+    env_logger::init();
     simulate_find_shareholders_endpoint().await
 }

@@ -42,10 +42,10 @@ impl Worker {
             };
 
             let job_result = match job {
-                Job::RecursiveShareholders(job) => {
+                Job::Shareholders(job) => {
                     job.do_job(&mut self.database, &mut self.producer).await
                 }
-                Job::Officers(job) => job.do_job(&mut self.database).await,
+                Job::Officers(job) => job.do_job(&mut self.database, &mut self.producer).await,
             };
 
             match job_result {

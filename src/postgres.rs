@@ -3,8 +3,7 @@ use diesel::prelude::*;
 use diesel::{insert_into, Connection, PgConnection};
 use uuid::Uuid;
 
-use crate::model::RelationshipKind;
-use crate::postgres_types::{Check, CheckEntityMap, Entity, Relationship};
+use crate::models::{Check, CheckEntityMap, Entity, Relationship, Relationshipkind};
 use crate::schema::{check, check_entity_map, entity, relationship};
 
 pub struct Database {
@@ -71,7 +70,7 @@ impl Database {
     pub fn get_relations(
         &mut self,
         entity_id: Uuid,
-        relationship_kind: RelationshipKind,
+        relationship_kind: Relationshipkind,
     ) -> Result<Vec<Entity>, failure::Error> {
         let relations = entity::table
             .inner_join(relationship::table.on(relationship::parent_id.eq(entity::id)))

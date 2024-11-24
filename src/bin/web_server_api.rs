@@ -8,10 +8,9 @@ use log::warn;
 use serde::{Deserialize, Serialize};
 use uuid::Uuid;
 use Company_Investigation::{
-    jobs::{Job, Officers, RecursiveShareholders},
-    model::RelationshipKind,
+    jobs::{Job, Officers, Shareholders},
+    models::{Entity, Relationshipkind},
     postgres::Database,
-    postgres_types::Entity,
     pulsar::PulsarClient,
 };
 
@@ -26,8 +25,8 @@ fn get_entity_response(check_id: Uuid) -> Result<EntityResponse, failure::Error>
     let check_entities = database.get_entities(check_id)?;
 
     for entity in check_entities {
-        let officers = database.get_relations(entity.id, RelationshipKind::Officer)?;
-        let shareholders = database.get_relations(entity.id, RelationshipKind::Shareholder)?;
+        let officers = database.get_relations(entity.id, Relationshipkind::Officer)?;
+        let shareholders = database.get_relations(entity.id, Relationshipkind::Shareholder)?;
         entities.push(EntityWithRelations {
             entity,
             officers,
@@ -98,7 +97,7 @@ async fn start_relations_check(
 
     if validated_shareholder_depth > 0 {
         producer
-            .produce_message(Job::RecursiveShareholders(RecursiveShareholders {
+            .produce_message(Job::Shareholders(Shareholders {
                 parent_id: entity_id,
                 check_id,
                 parent_company_number: company_house_number,
