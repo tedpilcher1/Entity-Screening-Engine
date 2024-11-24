@@ -6,7 +6,7 @@
 - Create service to handle risk calculation
 - Create service for LLM integration, document summary, risk breakdown etc
 - React frontend (todo when depressed)
-
+- Add entity search job, used to get company number based on name, some fuzzy match etc, probably can just use ch api
 
 ## Requirements to run
 - Docker running
