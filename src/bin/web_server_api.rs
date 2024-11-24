@@ -56,7 +56,7 @@ struct EntityResponse {
 }
 
 #[get("/get_relations/{check_id}")]
-async fn get_relations_endpoint(params: web::Query<Uuid>) -> impl Responder {
+async fn get_relations_endpoint(params: web::Path<Uuid>) -> impl Responder {
     let check_id = params.into_inner();
     match get_entity_response(check_id) {
         Ok(entity_response) => HttpResponse::Ok().json(entity_response),
@@ -111,11 +111,25 @@ async fn start_relations_check(
     Ok(check_id)
 }
 
-#[post("/start_relations_check/{company_house_number}/{officer_depth}/{shareholder_depth}")]
+#[derive(Deserialize)]
+struct StartRelationsCheckParams {
+    officer_depth: Option<usize>,
+    shareholder_depth: Option<usize>,
+}
+
+#[post("/start_relations_check/{company_house_number}")]
 async fn start_relations_check_endpoint(
-    params: web::Query<(String, OfficerDepth, ShareholderDepth)>,
+    path: web::Path<String>,
+    info: Option<web::Query<StartRelationsCheckParams>>,
 ) -> impl Responder {
-    let (company_house_number, officer_depth, shareholder_depth) = params.into_inner();
+    let company_house_number = path.into_inner();
+
+    let (officer_depth, shareholder_depth) = match info {
+        Some(info) => {
+            (info.officer_depth.unwrap_or_else(|| 1), info.shareholder_depth.unwrap_or_else(|| 1))
+        }
+        None => (1, 1),
+    };
 
     match start_relations_check(
         company_house_number.clone(),
@@ -138,10 +152,14 @@ async fn start_relations_check_endpoint(
 #[actix_web::main]
 async fn main() -> std::io::Result<()> {
     dotenv().ok();
+    env_logger::init();
+
     HttpServer::new(|| {
         App::new()
-            .service(get_relations_endpoint)
+            // .app_data(web::Data::new(Database::connect()))
+            // .app_data(web::Data::new(PulsarClient::new()))
             .service(start_relations_check_endpoint)
+            .service(get_relations_endpoint)
     })
     .bind("127.0.0.1:8080")?
     .run()
