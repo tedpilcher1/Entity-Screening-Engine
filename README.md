@@ -2,11 +2,12 @@
 
 
 ## To do:
-- Create new service to handle tracking tasks/jobs, recording duration, completion, metrics etc (could be used for costing too)
-- Create service to handle risk calculation
-- Create service for LLM integration, document summary, risk breakdown etc
-- React frontend (todo when depressed)
-- Add entity search job, used to get company number based on name, some fuzzy match etc, probably can just use ch api
+- (Low priority) Create new service to handle tracking tasks/jobs, recording duration, completion, metrics etc (could be used for costing too)
+- (High priority) Create service to handle risk calculation: find sanctions, criminal records, shell company analysis etc
+-- OpenSanctions: Peps, Regulatory watchlists, Sanctioned Securities, Warrents and Criminal Entities
+- (Very low priority) Create service for LLM integration, document summary, risk breakdown etc
+- (High priority )React frontend (todo when depressed)
+- (Medium priority) Add entity search job, used to get company number based on name, some fuzzy match etc, probably can just use ch api
 
 ## Requirements to run
 - Docker running
