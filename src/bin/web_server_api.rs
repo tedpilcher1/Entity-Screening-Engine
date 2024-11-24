@@ -15,9 +15,9 @@ use Company_Investigation::{
     pulsar::PulsarClient,
 };
 
-type OfficerDepth = i32;
-type ShareholderDepth = i32;
-const MAX_DEPTH: i32 = 5;
+type OfficerDepth = usize;
+type ShareholderDepth = usize;
+const MAX_DEPTH: usize = 5;
 
 fn get_entity_response(check_id: Uuid) -> Result<EntityResponse, failure::Error> {
     let mut database = Database::connect()?;
@@ -81,24 +81,29 @@ async fn start_relations_check(
     let check_id = database.insert_check()?;
     let entity_id = database.insert_entity(&Entity::create_root(), check_id)?;
 
-    if officer_depth > 0 {
+    let validated_officer_depth = min(officer_depth, MAX_DEPTH);
+    let validated_shareholder_depth = min(shareholder_depth, MAX_DEPTH);
+
+    if validated_officer_depth > 0 {
         producer
             .produce_message(Job::Officers(Officers {
                 entity_id,
                 check_id,
                 company_house_number: company_house_number.clone(),
+                remaining_officers_depth: validated_officer_depth,
+                remaining_shareholder_depth: validated_shareholder_depth,
             }))
             .await?;
     }
 
-    if shareholder_depth > 0 {
+    if validated_shareholder_depth > 0 {
         producer
             .produce_message(Job::RecursiveShareholders(RecursiveShareholders {
                 parent_id: entity_id,
                 check_id,
                 parent_company_number: company_house_number,
-                remaining_depth: min(shareholder_depth, MAX_DEPTH),
-                get_officers: officer_depth > 0,
+                remaining_shareholder_depth: validated_shareholder_depth,
+                remaining_officers_depth: validated_officer_depth,
             }))
             .await?;
     }

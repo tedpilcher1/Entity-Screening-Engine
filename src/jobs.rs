@@ -39,8 +39,8 @@ pub struct RecursiveShareholders {
     pub parent_id: Uuid,
     pub check_id: Uuid,
     pub parent_company_number: String,
-    pub remaining_depth: i32,
-    pub get_officers: bool,
+    pub remaining_shareholder_depth: usize,
+    pub remaining_officers_depth: usize,
 }
 
 impl RecursiveShareholders {
@@ -49,11 +49,6 @@ impl RecursiveShareholders {
         database: &mut Database,
         producer: &mut PulsarProducer,
     ) -> Result<(), failure::Error> {
-        // get shareholders for parent_company_id
-        // for each shareholder
-        // -- store in db
-        // -- produce message
-
         let shareholders_list = get_company_shareholders(&self.parent_company_number).await?;
         for shareholder in shareholders_list.items.unwrap_or_default() {
             let entity: Result<Entity, ()> = (shareholder, false).try_into();
@@ -69,27 +64,14 @@ impl RecursiveShareholders {
                 kind: RelationshipKind::Shareholder,
             })?;
 
-            if self.get_officers {
-                let job = Job::Officers(Officers {
-                    entity_id: child_id,
-                    check_id: self.check_id,
-                    company_house_number: entity.company_house_number.clone(),
-                });
-
-                producer.produce_message(job).await?;
-            }
-
-            if self.remaining_depth > 0 {
-                let job = Job::RecursiveShareholders(RecursiveShareholders {
-                    parent_id: child_id,
-                    check_id: self.check_id,
-                    parent_company_number: entity.company_house_number,
-                    remaining_depth: self.remaining_depth - 1,
-                    get_officers: self.get_officers,
-                });
-
-                producer.produce_message(job).await?;
-            }
+            queue_relation_jobs(
+                self.remaining_officers_depth,
+                self.remaining_shareholder_depth - 1,
+                child_id,
+                self.check_id,
+                entity.company_house_number,
+            )
+            .await?;
         }
         Ok(())
     }
@@ -100,6 +82,8 @@ pub struct Officers {
     pub entity_id: Uuid,
     pub check_id: Uuid,
     pub company_house_number: String,
+    pub remaining_shareholder_depth: usize,
+    pub remaining_officers_depth: usize,
 }
 
 impl Officers {
@@ -120,8 +104,51 @@ impl Officers {
                 child_id,
                 kind: RelationshipKind::Officer,
             })?;
+
+            queue_relation_jobs(
+                self.remaining_officers_depth - 1,
+                self.remaining_shareholder_depth,
+                entity.id,
+                check_id,
+                entity.company_house_number,
+            )
+            .await?;
         }
 
         Ok(())
     }
+}
+
+async fn queue_relation_jobs(
+    remaining_officers_depth: usize,
+    remaining_shareholder_depth: usize,
+    entity_id: Uuid,
+    check_id: Uuid,
+    company_house_number: String,
+) -> Result<(), failure::Error> {
+    if remaining_officers_depth > 0 {
+        let job = Job::Officers(Officers {
+            entity_id,
+            check_id,
+            company_house_number,
+            remaining_officers_depth,
+            remaining_shareholder_depth,
+        });
+
+        producer.produce_message(job).await?;
+    }
+
+    if remaining_shareholder_depth > 0 {
+        let job = Job::RecursiveShareholders(RecursiveShareholders {
+            parent_id: entity_id,
+            check_id,
+            parent_company_number: company_house_number,
+            remaining_officers_depth,
+            remaining_shareholder_depth,
+        });
+
+        producer.produce_message(job).await?;
+    }
+
+    Ok(())
 }
