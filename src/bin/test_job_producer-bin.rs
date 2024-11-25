@@ -37,7 +37,7 @@ async fn simulate_find_shareholders_endpoint() {
         remaining_officers_depth: 5,
     });
 
-    producer.enqueue_job(&mut conn, job_kind).await.unwrap();
+    producer.enqueue_job(&mut conn, check_id, job_kind).await.unwrap();
 }
 
 #[tokio::main]

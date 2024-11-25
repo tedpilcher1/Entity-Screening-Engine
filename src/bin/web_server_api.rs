@@ -86,7 +86,7 @@ async fn start_relations_check(
 
     if validated_officer_depth > 0 {
         producer
-            .enqueue_job(&mut database, JobKind::Officers(Officers {
+            .enqueue_job(&mut database, check_id, JobKind::Officers(Officers {
                 entity_id,
                 check_id,
                 company_house_number: company_house_number.clone(),
@@ -98,7 +98,7 @@ async fn start_relations_check(
 
     if validated_shareholder_depth > 0 {
         producer
-            .enqueue_job(&mut database, JobKind::Shareholders(Shareholders {
+            .enqueue_job(&mut database, check_id, JobKind::Shareholders(Shareholders {
                 parent_id: entity_id,
                 check_id,
                 parent_company_number: company_house_number,

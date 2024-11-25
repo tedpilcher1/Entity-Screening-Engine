@@ -3,8 +3,8 @@ use diesel::{prelude::*, update};
 use diesel::{insert_into, Connection, PgConnection};
 use uuid::Uuid;
 
-use crate::models::{Check, CheckEntityMap, Entity, Job, Relationship, Relationshipkind};
-use crate::schema::{check, check_entity_map, entity, relationship, job};
+use crate::models::{Check, CheckEntityMap, CheckJobMap, Entity, Job, Relationship, Relationshipkind};
+use crate::schema::{check, check_entity_map, check_job_map, entity, job, relationship};
 
 pub struct Database {
     conn: PgConnection,
@@ -129,16 +129,29 @@ impl Database {
         Ok(check)
     }
 
-    pub fn add_job(&mut self) -> Result<Uuid, failure::Error> {
+    pub fn add_job(&mut self, check_id: Uuid) -> Result<Uuid, failure::Error> {
         let id = Uuid::new_v4();
-        insert_into(job::table)
-            .values(Job {
-                id,
-                enqueued_at: Utc::now().naive_utc(),
-                completed_at: None,
-            }
-            )
-            .execute(&mut self.conn)?;
+
+        self.conn.transaction(|conn| {
+            insert_into(job::table)
+                .values(Job {
+                    id,
+                    enqueued_at: Utc::now().naive_utc(),
+                    completed_at: None,
+                }
+                )
+                .execute(conn)?;
+
+            insert_into(check_job_map::table)
+                .values(CheckJobMap {
+                    check_id,
+                    job_id: id,
+                })
+                .execute(conn)?;
+
+
+            diesel::result::QueryResult::Ok(())
+        })?;
 
         Ok(id)
     }
@@ -150,5 +163,17 @@ impl Database {
             .execute(&mut self.conn)?;
 
         Ok(())
+    }
+
+    pub fn is_check_complete(&mut self, check_id: Uuid) -> Result<bool, failure::Error> {
+        let uuids = job::table
+            .inner_join(check_job_map::table.on(check_job_map::job_id.eq(job::id)))
+            .filter(check_job_map::check_id.eq(check_id))
+            .filter(job::completed_at.is_null())
+            .select(job::id)
+            .load::<Uuid>(&mut self.conn)?;
+
+        // if no records have not been completed
+        Ok(uuids.len() == 0)
     }
 }

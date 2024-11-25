@@ -72,8 +72,8 @@ impl PulsarProducer {
         Ok(())
     }
 
-    pub async fn enqueue_job(&mut self, database: &mut Database, job_kind: JobKind) -> Result<(), failure::Error> {
-        let job_id = database.add_job()?;
+    pub async fn enqueue_job(&mut self, database: &mut Database, check_id: Uuid, job_kind: JobKind) -> Result<(), failure::Error> {
+        let job_id = database.add_job(check_id)?;
         self.produce_message(Job {
             id: job_id,
             job_kind,

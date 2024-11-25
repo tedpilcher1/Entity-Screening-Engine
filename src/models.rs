@@ -220,3 +220,11 @@ pub struct Job {
     pub enqueued_at: NaiveDateTime,
     pub completed_at: Option<NaiveDateTime>,
 }
+
+#[derive(Queryable, Selectable, Insertable)]
+#[diesel(table_name = crate::schema::check_job_map)]
+#[diesel(check_for_backend(diesel::pg::Pg))]
+pub struct CheckJobMap {
+    pub check_id: Uuid,
+    pub job_id: Uuid,
+}

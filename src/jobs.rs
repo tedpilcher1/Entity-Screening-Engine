@@ -151,7 +151,7 @@ async fn queue_relation_jobs(
             remaining_shareholder_depth,
         });
 
-        producer.enqueue_job(database, job_kind).await?;
+        producer.enqueue_job(database, check_id, job_kind).await?;
     }
 
     if remaining_shareholder_depth > 0 {
@@ -163,7 +163,7 @@ async fn queue_relation_jobs(
             remaining_shareholder_depth,
         });
 
-        producer.enqueue_job(database, job_kind).await?;
+        producer.enqueue_job(database, check_id, job_kind).await?;
     }
     Ok(())
 }

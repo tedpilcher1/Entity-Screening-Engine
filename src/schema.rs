@@ -25,6 +25,13 @@ diesel::table! {
 }
 
 diesel::table! {
+    check_job_map (check_id, job_id) {
+        check_id -> Uuid,
+        job_id -> Uuid,
+    }
+}
+
+diesel::table! {
     use diesel::sql_types::*;
     use super::sql_types::Entitykind;
 
@@ -37,6 +44,14 @@ diesel::table! {
         postal_code -> Nullable<Text>,
         date_of_origin -> Nullable<Text>,
         is_root -> Bool,
+    }
+}
+
+diesel::table! {
+    job (id) {
+        id -> Uuid,
+        enqueued_at -> Timestamp,
+        completed_at -> Nullable<Timestamp>,
     }
 }
 
@@ -54,17 +69,8 @@ diesel::table! {
 diesel::allow_tables_to_appear_in_same_query!(
     check,
     check_entity_map,
+    check_job_map,
     entity,
+    job,
     relationship,
 );
-
-
-diesel::table! {
-    use diesel::sql_types::*;
-
-    job (id) {
-        id -> Uuid,
-        enqueued_at -> Timestamp,
-        completed_at -> Nullable<Timestamp>,
-    }
-}
