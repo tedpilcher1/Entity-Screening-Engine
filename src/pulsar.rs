@@ -1,7 +1,7 @@
 use pulsar::{producer, proto, Consumer, Producer, Pulsar, SubType, TokioExecutor};
 use uuid::Uuid;
 
-use crate::jobs::Job;
+use crate::{jobs::{Job, JobKind}, postgres::Database};
 
 const PULSAR_ADDR: &str = "pulsar://localhost:6650";
 const TOPIC: &str = "non-persistent://public/default/testing";
@@ -67,8 +67,17 @@ pub struct PulsarProducer {
 }
 
 impl PulsarProducer {
-    pub async fn produce_message(&mut self, job: Job) -> Result<(), failure::Error> {
+    async fn produce_message(&mut self, job: Job) -> Result<(), failure::Error> {
         self.internal_producer.send(job).await?;
+        Ok(())
+    }
+
+    pub async fn enqueue_job(&mut self, database: &mut Database, job_kind: JobKind) -> Result<(), failure::Error> {
+        let job_id = database.add_job()?;
+        self.produce_message(Job {
+            id: job_id,
+            job_kind,
+        }).await?;
         Ok(())
     }
 }

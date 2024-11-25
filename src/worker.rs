@@ -2,7 +2,7 @@ use futures::TryStreamExt;
 use log::{info, warn};
 
 use crate::{
-    jobs::Job,
+    jobs::{Job, JobKind},
     postgres::Database,
     pulsar::{PulsarClient, PulsarConsumer, PulsarProducer},
 };
@@ -42,8 +42,8 @@ impl Worker {
             };
 
             let job_result = match job {
-                Job::Shareholders(job) => job.do_job(&mut self.database, &mut self.producer).await,
-                Job::Officers(job) => job.do_job(&mut self.database, &mut self.producer).await,
+                JobKind::Shareholders(job) => job.do_job(&mut self.database, &mut self.producer).await,
+                JobKind::Officers(job) => job.do_job(&mut self.database, &mut self.producer).await,
             };
 
             match job_result {

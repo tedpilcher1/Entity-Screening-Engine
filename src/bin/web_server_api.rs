@@ -8,7 +8,7 @@ use log::warn;
 use serde::{Deserialize, Serialize};
 use uuid::Uuid;
 use Company_Investigation::{
-    jobs::{Job, Officers, Shareholders},
+    jobs::{Job, JobKind, Officers, Shareholders},
     models::{Entity, Relationshipkind},
     postgres::Database,
     pulsar::PulsarClient,
@@ -86,7 +86,7 @@ async fn start_relations_check(
 
     if validated_officer_depth > 0 {
         producer
-            .produce_message(Job::Officers(Officers {
+            .enqueue_job(&mut database, JobKind::Officers(Officers {
                 entity_id,
                 check_id,
                 company_house_number: company_house_number.clone(),
@@ -98,7 +98,7 @@ async fn start_relations_check(
 
     if validated_shareholder_depth > 0 {
         producer
-            .produce_message(Job::Shareholders(Shareholders {
+            .enqueue_job(&mut database, JobKind::Shareholders(Shareholders {
                 parent_id: entity_id,
                 check_id,
                 parent_company_number: company_house_number,

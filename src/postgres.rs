@@ -3,8 +3,8 @@ use diesel::prelude::*;
 use diesel::{insert_into, Connection, PgConnection};
 use uuid::Uuid;
 
-use crate::models::{Check, CheckEntityMap, Entity, Relationship, Relationshipkind};
-use crate::schema::{check, check_entity_map, entity, relationship};
+use crate::models::{Check, CheckEntityMap, Entity, Job, Relationship, Relationshipkind};
+use crate::schema::{check, check_entity_map, entity, relationship, job};
 
 pub struct Database {
     conn: PgConnection,
@@ -127,5 +127,19 @@ impl Database {
             .ok_or_else(|| failure::format_err!("Check not found with id: {}", check_id))?;
 
         Ok(check)
+    }
+
+    pub fn add_job(&mut self) -> Result<Uuid, failure::Error> {
+        let id = Uuid::new_v4();
+        insert_into(job::table)
+            .values(Job {
+                id,
+                enqueued_at: Utc::now().naive_utc(),
+                completed_at: None,
+            }
+            )
+            .execute(&mut self.conn)?;
+
+        Ok(id)
     }
 }

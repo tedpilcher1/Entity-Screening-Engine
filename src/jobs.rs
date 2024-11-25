@@ -11,7 +11,13 @@ use crate::{
 };
 
 #[derive(Serialize, Deserialize, Debug)]
-pub enum Job {
+pub struct Job {
+    pub id: Uuid,
+    pub job_kind: JobKind,
+}
+
+#[derive(Serialize, Deserialize, Debug)]
+pub enum JobKind {
     Shareholders(Shareholders),
     Officers(Officers),
     // Companies(Companies),
@@ -28,7 +34,7 @@ impl SerializeMessage for Job {
 }
 
 impl DeserializeMessage for Job {
-    type Output = Result<Job, serde_json::Error>;
+    type Output = Result<JobKind, serde_json::Error>;
 
     fn deserialize_message(payload: &pulsar::Payload) -> Self::Output {
         serde_json::from_slice(&payload.data)
@@ -67,6 +73,7 @@ impl Shareholders {
 
             queue_relation_jobs(
                 producer,
+                database,
                 self.remaining_officers_depth,
                 self.remaining_shareholder_depth - 1,
                 parent_id,
@@ -112,6 +119,7 @@ impl Officers {
 
             queue_relation_jobs(
                 producer,
+                database,
                 self.remaining_officers_depth - 1,
                 self.remaining_shareholder_depth,
                 parent_id,
@@ -127,6 +135,7 @@ impl Officers {
 
 async fn queue_relation_jobs(
     producer: &mut PulsarProducer,
+    database: &mut Database,
     remaining_officers_depth: usize,
     remaining_shareholder_depth: usize,
     entity_id: Uuid,
@@ -134,7 +143,7 @@ async fn queue_relation_jobs(
     company_house_number: String,
 ) -> Result<(), failure::Error> {
     if remaining_officers_depth > 0 {
-        let job = Job::Officers(Officers {
+        let job_kind = JobKind::Officers(Officers {
             entity_id,
             check_id,
             company_house_number: company_house_number.clone(),
@@ -142,11 +151,11 @@ async fn queue_relation_jobs(
             remaining_shareholder_depth,
         });
 
-        producer.produce_message(job).await?;
+        producer.enqueue_job(database, job_kind).await?;
     }
 
     if remaining_shareholder_depth > 0 {
-        let job = Job::Shareholders(Shareholders {
+        let job_kind = JobKind::Shareholders(Shareholders {
             parent_id: entity_id,
             check_id,
             parent_company_number: company_house_number,
@@ -154,7 +163,7 @@ async fn queue_relation_jobs(
             remaining_shareholder_depth,
         });
 
-        producer.produce_message(job).await?;
+        producer.enqueue_job(database, job_kind).await?;
     }
     Ok(())
 }
