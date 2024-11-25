@@ -41,7 +41,7 @@ impl Worker {
                 }
             };
 
-            let job_result = match job {
+            let job_result = match job.job_kind {
                 JobKind::Shareholders(job) => job.do_job(&mut self.database, &mut self.producer).await,
                 JobKind::Officers(job) => job.do_job(&mut self.database, &mut self.producer).await,
             };

@@ -34,7 +34,7 @@ impl SerializeMessage for Job {
 }
 
 impl DeserializeMessage for Job {
-    type Output = Result<JobKind, serde_json::Error>;
+    type Output = Result<Job, serde_json::Error>;
 
     fn deserialize_message(payload: &pulsar::Payload) -> Self::Output {
         serde_json::from_slice(&payload.data)
