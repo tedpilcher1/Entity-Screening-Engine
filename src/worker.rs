@@ -23,6 +23,16 @@ impl Worker {
             consumer: pulsar_client.create_consumer().await,
         })
     }
+
+    pub async fn run_job(&mut self, job: Job) -> Result<(), failure::Error> {
+        match job.job_kind {
+            JobKind::Shareholders(job) => job.do_job(&mut self.database, &mut self.producer).await?,
+            JobKind::Officers(job) => job.do_job(&mut self.database, &mut self.producer).await?,
+        };
+        self.database.complete_job(job.id)?;
+        Ok(())
+    }
+
     // TODO: negative ack
     pub async fn do_work(&mut self) {
         // TODO: remove .expect(...) below
@@ -41,12 +51,7 @@ impl Worker {
                 }
             };
 
-            let job_result = match job.job_kind {
-                JobKind::Shareholders(job) => job.do_job(&mut self.database, &mut self.producer).await,
-                JobKind::Officers(job) => job.do_job(&mut self.database, &mut self.producer).await,
-            };
-
-            match job_result {
+            match self.run_job(job).await {
                 // TODO: log + metrics
                 Ok(_) => {
                     info!("Job completed successfully")

@@ -1,5 +1,5 @@
 use chrono::Utc;
-use diesel::prelude::*;
+use diesel::{prelude::*, update};
 use diesel::{insert_into, Connection, PgConnection};
 use uuid::Uuid;
 
@@ -141,5 +141,14 @@ impl Database {
             .execute(&mut self.conn)?;
 
         Ok(id)
+    }
+
+    pub fn complete_job(&mut self, job_id: Uuid) -> Result<(), failure::Error> {
+        update(job::table)
+            .filter(job::id.eq(job_id))
+            .set(job::completed_at.eq(Utc::now().naive_utc()))
+            .execute(&mut self.conn)?;
+
+        Ok(())
     }
 }
