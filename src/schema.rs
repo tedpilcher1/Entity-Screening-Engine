@@ -57,3 +57,14 @@ diesel::allow_tables_to_appear_in_same_query!(
     entity,
     relationship,
 );
+
+
+diesel::table! {
+    use diesel::sql_types::*;
+
+    job (id) {
+        id -> Uuid,
+        enqueued_at -> Timestamp,
+        completed_at -> Nullable<Timestamp>,
+    }
+}

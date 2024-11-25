@@ -1,4 +1,3 @@
-use crate::company_house_apis::get_company;
 use pulsar::{producer, DeserializeMessage, Error as PulsarError, SerializeMessage};
 use serde::{Deserialize, Serialize};
 use uuid::Uuid;
@@ -59,10 +58,10 @@ impl Shareholders {
                 Err(_) => return Ok(()),
             };
 
-            let child_id = database.insert_entity(&entity, self.check_id)?;
+            let parent_id = database.insert_entity(&entity, self.check_id)?;
             database.insert_relationship(Relationship {
-                parent_id: entity.id,
-                child_id,
+                parent_id,
+                child_id: entity.id,
                 kind: Relationshipkind::Shareholder,
             })?;
 
@@ -70,7 +69,7 @@ impl Shareholders {
                 producer,
                 self.remaining_officers_depth,
                 self.remaining_shareholder_depth - 1,
-                child_id,
+                parent_id,
                 self.check_id,
                 entity.company_house_number,
             )
@@ -82,7 +81,7 @@ impl Shareholders {
 
 #[derive(Serialize, Deserialize, Debug)]
 pub struct Officers {
-    pub entity_id: Uuid,
+    pub entity_id: Uuid, // todo rename to child_id
     pub check_id: Uuid,
     pub company_house_number: String,
     pub remaining_shareholder_depth: usize,
@@ -104,10 +103,10 @@ impl Officers {
                 Err(_) => return Ok(()),
             };
 
-            let child_id = database.insert_entity(&entity, self.check_id)?;
+            let parent_id = database.insert_entity(&entity, self.check_id)?;
             database.insert_relationship(Relationship {
-                parent_id: entity.id,
-                child_id,
+                parent_id,
+                child_id: self.entity_id,
                 kind: Relationshipkind::Officer,
             })?;
 
@@ -115,7 +114,7 @@ impl Officers {
                 producer,
                 self.remaining_officers_depth - 1,
                 self.remaining_shareholder_depth,
-                entity.id,
+                parent_id,
                 self.check_id,
                 entity.company_house_number,
             )

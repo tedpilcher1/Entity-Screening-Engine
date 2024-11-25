@@ -29,8 +29,8 @@ fn get_entity_response(check_id: Uuid) -> Result<EntityResponse, failure::Error>
         let shareholders = database.get_relations(entity.id, Relationshipkind::Shareholder)?;
         entities.push(EntityWithRelations {
             entity,
-            officers,
-            shareholders,
+            officers: officers.into_iter().map(|officer| officer.id).collect(),
+            shareholders: shareholders.into_iter().map(|shareholder| shareholder.id).collect(),
         });
     }
 
@@ -44,8 +44,8 @@ fn get_entity_response(check_id: Uuid) -> Result<EntityResponse, failure::Error>
 #[derive(Serialize, Deserialize)]
 struct EntityWithRelations {
     entity: Entity,
-    officers: Vec<Entity>,
-    shareholders: Vec<Entity>,
+    officers: Vec<Uuid>,
+    shareholders: Vec<Uuid>,
 }
 
 #[derive(Serialize, Deserialize)]
