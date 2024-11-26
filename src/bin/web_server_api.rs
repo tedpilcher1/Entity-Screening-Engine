@@ -8,10 +8,7 @@ use log::warn;
 use serde::{Deserialize, Serialize};
 use uuid::Uuid;
 use Company_Investigation::{
-    jobs::{JobKind, Officers, Shareholders},
-    models::{Entity, Relationshipkind},
-    postgres::Database,
-    pulsar::PulsarClient,
+    jobs::{jobs::JobKind, relation_jobs::{RelationJob, RelationJobKind}}, models::{Entity, Relationshipkind}, postgres::Database, pulsar::PulsarClient
 };
 
 type OfficerDepth = usize;
@@ -30,7 +27,10 @@ fn get_entity_response(check_id: Uuid) -> Result<EntityResponse, failure::Error>
         entities.push(EntityWithRelations {
             entity,
             officers: officers.into_iter().map(|officer| officer.id).collect(),
-            shareholders: shareholders.into_iter().map(|shareholder| shareholder.id).collect(),
+            shareholders: shareholders
+                .into_iter()
+                .map(|shareholder| shareholder.id)
+                .collect(),
         });
     }
 
@@ -79,33 +79,46 @@ async fn start_relations_check(
     let company_house_number = format!("{:0>8}", company_house_number);
 
     let check_id = database.insert_check()?;
-    let entity_id = database.insert_entity(&Entity::create_root(company_house_number.clone()), check_id)?;
+    let entity_id =
+        database.insert_entity(&Entity::create_root(company_house_number.clone()), check_id)?;
 
     let validated_officer_depth = min(officer_depth, MAX_DEPTH);
     let validated_shareholder_depth = min(shareholder_depth, MAX_DEPTH);
-    
+
     println!("{:?}", validated_officer_depth);
     if validated_officer_depth > 0 {
         producer
-            .enqueue_job(&mut database, check_id, JobKind::Officers(Officers {
-                child_id: entity_id,
+            .enqueue_job(
+                &mut database,
                 check_id,
-                company_house_number: company_house_number.clone(),
-                remaining_officers_depth: validated_officer_depth,
-                remaining_shareholder_depth: validated_shareholder_depth,
-            }))
+                JobKind::RelationJob(RelationJob {
+                    child_id: entity_id,
+                    check_id,
+                    company_house_number: company_house_number.clone(),
+                    remaining_shareholder_depth: validated_shareholder_depth,
+                    remaining_officer_depth: validated_officer_depth,
+                    remaining_appointment_depth: 0, // TODO
+                    relation_job_kind: RelationJobKind::Officers,
+                })
+            )
             .await?;
     }
 
     if validated_shareholder_depth > 0 {
         producer
-            .enqueue_job(&mut database, check_id, JobKind::Shareholders(Shareholders {
-                child_id: entity_id,
+            .enqueue_job(
+                &mut database,
                 check_id,
-                parent_company_number: company_house_number,
-                remaining_shareholder_depth: validated_shareholder_depth,
-                remaining_officers_depth: validated_officer_depth,
-            }))
+                JobKind::RelationJob(RelationJob {
+                    child_id: entity_id,
+                    check_id,
+                    company_house_number,
+                    remaining_shareholder_depth: validated_shareholder_depth,
+                    remaining_officer_depth: validated_officer_depth,
+                    remaining_appointment_depth: 0, // TODO
+                    relation_job_kind: RelationJobKind::Officers,
+                })
+            )
             .await?;
     }
 
@@ -126,9 +139,10 @@ async fn start_relations_check_endpoint(
     let company_house_number = path.into_inner();
 
     let (officer_depth, shareholder_depth) = match info {
-        Some(info) => {
-            (info.officer_depth.unwrap_or_else(|| 0), info.shareholder_depth.unwrap_or_else(|| 0))
-        }
+        Some(info) => (
+            info.officer_depth.unwrap_or_else(|| 0),
+            info.shareholder_depth.unwrap_or_else(|| 0),
+        ),
         None => (0, 0),
     };
 

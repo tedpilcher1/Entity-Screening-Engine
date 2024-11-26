@@ -2,9 +2,7 @@ use futures::TryStreamExt;
 use log::{info, warn};
 
 use crate::{
-    jobs::{Job, JobKind},
-    postgres::Database,
-    pulsar::{PulsarClient, PulsarConsumer, PulsarProducer},
+    jobs::jobs::{Job, JobKind}, postgres::Database, pulsar::{PulsarClient, PulsarConsumer, PulsarProducer}
 };
 
 pub struct Worker {
@@ -26,8 +24,7 @@ impl Worker {
 
     pub async fn run_job(&mut self, job: Job) -> Result<(), failure::Error> {
         match job.job_kind {
-            JobKind::Shareholders(job) => job.do_job(&mut self.database, &mut self.producer).await?,
-            JobKind::Officers(job) => job.do_job(&mut self.database, &mut self.producer).await?,
+            JobKind::RelationJob(relation_job) => relation_job.do_work(&mut self.database, &mut self.producer).await?,
         };
         self.database.complete_job(job.id)?;
         Ok(())

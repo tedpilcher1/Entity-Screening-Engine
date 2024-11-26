@@ -1,10 +1,7 @@
 use dotenv::dotenv;
 use uuid::Uuid;
 use Company_Investigation::{
-    jobs::{JobKind, Shareholders},
-    models::Entity,
-    postgres::Database,
-    pulsar::PulsarClient,
+    jobs::{jobs::JobKind, relation_jobs::{RelationJob, RelationJobKind}}, models::Entity, postgres::Database, pulsar::PulsarClient
 };
 
 async fn simulate_find_shareholders_endpoint() {
@@ -29,15 +26,20 @@ async fn simulate_find_shareholders_endpoint() {
         )
         .expect("Should be able to insert root entity");
 
-    let job_kind = JobKind::Shareholders(Shareholders {
+    let job_kind = JobKind::RelationJob(RelationJob {
         child_id,
         check_id,
-        parent_company_number: company_house_number,
+        company_house_number,
         remaining_shareholder_depth: 5,
-        remaining_officers_depth: 5,
+        remaining_officer_depth: 5,
+        remaining_appointment_depth: 5,
+        relation_job_kind: RelationJobKind::Shareholders,
     });
 
-    producer.enqueue_job(&mut conn, check_id, job_kind).await.unwrap();
+    producer
+        .enqueue_job(&mut conn, check_id, job_kind)
+        .await
+        .unwrap();
 }
 
 #[tokio::main]

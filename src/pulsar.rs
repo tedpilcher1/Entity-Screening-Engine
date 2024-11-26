@@ -1,7 +1,7 @@
 use pulsar::{producer, proto, Consumer, Producer, Pulsar, SubType, TokioExecutor};
 use uuid::Uuid;
 
-use crate::{jobs::{Job, JobKind}, postgres::Database};
+use crate::{jobs::jobs::{Job, JobKind}, postgres::Database};
 
 const PULSAR_ADDR: &str = "pulsar://localhost:6650";
 const TOPIC: &str = "non-persistent://public/default/testing";
