@@ -66,11 +66,20 @@ impl FromSql<crate::schema::sql_types::Entitykind, Pg> for Entitykind {
     }
 }
 
-// TODO: this needs proper mapping between returned kinds
+// TODO: this could be better
 impl From<Option<String>> for Entitykind {
-    fn from(_kind: Option<String>) -> Self {
-        Self::Company
-        // should default to company
+    fn from(kind: Option<String>) -> Self {
+        match kind.unwrap_or_default().as_str() {
+            "individual-person-with-significant-control" => Self::Individual,
+            "corporate-entity-person-with-significant-control" => Self::Company,
+            "legal-person-with-significant-control" => Self::Individual,
+            "super-secure-person-with-significant-control" => Self::Individual,
+            "individual-beneficial-owner" => Self::Individual,
+            "corporate-entity-beneficial-owner" => Self::Company,
+            "legal-person-beneficial-owner" => Self::Individual,
+            "super-secure-beneficial-owner" => Self::Company,
+            _ => Self::Company,
+        }
     }
 }
 
