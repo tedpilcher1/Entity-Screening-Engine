@@ -167,6 +167,17 @@ impl Database {
     }
 
     pub fn check_completed_at(&mut self, check_id: Uuid) -> Result<Option<NaiveDateTime>, failure::Error> {
+        let incomplete_jobs =  job::table
+            .inner_join(check_job_map::table.on(check_job_map::job_id.eq(job::id)))
+            .filter(check_job_map::check_id.eq(check_id))
+            .filter(job::completed_at.is_null())
+            .select(job::id)
+            .load::<Uuid>(&mut self.conn)?;
+
+        if incomplete_jobs.len() > 0 {
+            return Ok(None)
+        }
+
         let latest_completion = job::table
             .inner_join(check_job_map::table.on(check_job_map::job_id.eq(job::id)))
             .filter(check_job_map::check_id.eq(check_id))
