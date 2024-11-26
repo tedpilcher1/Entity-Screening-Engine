@@ -8,7 +8,7 @@ use log::warn;
 use serde::{Deserialize, Serialize};
 use uuid::Uuid;
 use Company_Investigation::{
-    jobs::{Job, JobKind, Officers, Shareholders},
+    jobs::{JobKind, Officers, Shareholders},
     models::{Entity, Relationshipkind},
     postgres::Database,
     pulsar::PulsarClient,
@@ -37,7 +37,7 @@ fn get_entity_response(check_id: Uuid) -> Result<EntityResponse, failure::Error>
     Ok(EntityResponse {
         entities,
         started_at: check.started_at,
-        completed_at: None, // TODO once check handler/tracker service implemented
+        completed_at: database.check_completed_at(check_id)?,
     })
 }
 

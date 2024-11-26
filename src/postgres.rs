@@ -1,4 +1,5 @@
-use chrono::Utc;
+use chrono::{NaiveDate, NaiveDateTime, Utc};
+use diesel::sql_types::Timestamp;
 use diesel::{prelude::*, update};
 use diesel::{insert_into, Connection, PgConnection};
 use uuid::Uuid;
@@ -165,15 +166,13 @@ impl Database {
         Ok(())
     }
 
-    pub fn is_check_complete(&mut self, check_id: Uuid) -> Result<bool, failure::Error> {
-        let uuids = job::table
+    pub fn check_completed_at(&mut self, check_id: Uuid) -> Result<Option<NaiveDateTime>, failure::Error> {
+        let latest_completion = job::table
             .inner_join(check_job_map::table.on(check_job_map::job_id.eq(job::id)))
             .filter(check_job_map::check_id.eq(check_id))
-            .filter(job::completed_at.is_null())
-            .select(job::id)
-            .load::<Uuid>(&mut self.conn)?;
+            .select(diesel::dsl::max(job::completed_at))
+            .first::<Option<NaiveDateTime>>(&mut self.conn)?;
 
-        // if no records have not been completed
-        Ok(uuids.len() == 0)
+        Ok(latest_completion)
     }
 }
