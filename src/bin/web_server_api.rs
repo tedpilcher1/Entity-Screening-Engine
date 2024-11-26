@@ -83,11 +83,12 @@ async fn start_relations_check(
 
     let validated_officer_depth = min(officer_depth, MAX_DEPTH);
     let validated_shareholder_depth = min(shareholder_depth, MAX_DEPTH);
-
+    
+    println!("{:?}", validated_officer_depth);
     if validated_officer_depth > 0 {
         producer
             .enqueue_job(&mut database, check_id, JobKind::Officers(Officers {
-                entity_id,
+                child_id: entity_id,
                 check_id,
                 company_house_number: company_house_number.clone(),
                 remaining_officers_depth: validated_officer_depth,
@@ -99,7 +100,7 @@ async fn start_relations_check(
     if validated_shareholder_depth > 0 {
         producer
             .enqueue_job(&mut database, check_id, JobKind::Shareholders(Shareholders {
-                parent_id: entity_id,
+                child_id: entity_id,
                 check_id,
                 parent_company_number: company_house_number,
                 remaining_shareholder_depth: validated_shareholder_depth,
@@ -126,9 +127,9 @@ async fn start_relations_check_endpoint(
 
     let (officer_depth, shareholder_depth) = match info {
         Some(info) => {
-            (info.officer_depth.unwrap_or_else(|| 1), info.shareholder_depth.unwrap_or_else(|| 1))
+            (info.officer_depth.unwrap_or_else(|| 0), info.shareholder_depth.unwrap_or_else(|| 0))
         }
-        None => (1, 1),
+        None => (0, 0),
     };
 
     match start_relations_check(

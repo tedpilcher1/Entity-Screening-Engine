@@ -17,7 +17,7 @@ async fn simulate_find_shareholders_endpoint() {
 
     let mut conn = Database::connect().expect("Should be able to connect to db");
     let check_id = conn.insert_check().expect("Should be able to insert check");
-    let parent_id = conn
+    let child_id = conn
         .insert_entity(
             &Entity {
                 id: Uuid::new_v4(),
@@ -30,7 +30,7 @@ async fn simulate_find_shareholders_endpoint() {
         .expect("Should be able to insert root entity");
 
     let job_kind = JobKind::Shareholders(Shareholders {
-        parent_id,
+        child_id,
         check_id,
         parent_company_number: company_house_number,
         remaining_shareholder_depth: 5,

@@ -43,7 +43,7 @@ impl DeserializeMessage for Job {
 
 #[derive(Serialize, Deserialize, Debug)]
 pub struct Shareholders {
-    pub parent_id: Uuid,
+    pub child_id: Uuid,
     pub check_id: Uuid,
     pub parent_company_number: String,
     pub remaining_shareholder_depth: usize,
@@ -67,7 +67,7 @@ impl Shareholders {
             let parent_id = database.insert_entity(&entity, self.check_id)?;
             database.insert_relationship(Relationship {
                 parent_id,
-                child_id: entity.id,
+                child_id: self.child_id,
                 kind: Relationshipkind::Shareholder,
             })?;
 
@@ -88,7 +88,7 @@ impl Shareholders {
 
 #[derive(Serialize, Deserialize, Debug)]
 pub struct Officers {
-    pub entity_id: Uuid, // todo rename to child_id
+    pub child_id: Uuid, // todo rename to child_id
     pub check_id: Uuid,
     pub company_house_number: String,
     pub remaining_shareholder_depth: usize,
@@ -113,7 +113,7 @@ impl Officers {
             let parent_id = database.insert_entity(&entity, self.check_id)?;
             database.insert_relationship(Relationship {
                 parent_id,
-                child_id: self.entity_id,
+                child_id: self.child_id,
                 kind: Relationshipkind::Officer,
             })?;
 
@@ -144,7 +144,7 @@ async fn queue_relation_jobs(
 ) -> Result<(), failure::Error> {
     if remaining_officers_depth > 0 {
         let job_kind = JobKind::Officers(Officers {
-            entity_id,
+            child_id: entity_id,
             check_id,
             company_house_number: company_house_number.clone(),
             remaining_officers_depth,
@@ -156,7 +156,7 @@ async fn queue_relation_jobs(
 
     if remaining_shareholder_depth > 0 {
         let job_kind = JobKind::Shareholders(Shareholders {
-            parent_id: entity_id,
+            child_id: entity_id,
             check_id,
             parent_company_number: company_house_number,
             remaining_officers_depth,
