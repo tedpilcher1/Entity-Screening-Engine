@@ -9,7 +9,9 @@ use serde::{Deserialize, Serialize};
 use std::io::Write;
 use uuid::Uuid;
 
-use crate::company_house_response_types::{CompanyItem, OfficerListItem, ShareholderListItem};
+use crate::company_house_response_types::{CompanyItem, Identification, OfficerListItem, ShareholderListItem};
+
+type CompanyHouseNumber = String;
 
 #[derive(Debug, Clone, Copy, AsExpression, FromSqlRow)]
 #[diesel(sql_type = crate::schema::sql_types::Relationshipkind)]
@@ -83,6 +85,28 @@ impl From<Option<String>> for Entitykind {
     }
 }
 
+fn matchNumberToKind(person_number: Option<String>, identification: Option<Identification>) -> Option<(CompanyHouseNumber, Entitykind)> {
+
+    match person_number {
+        Some(person_number) => return Some((person_number, Entitykind::Individual)),
+        None => {},
+    }
+
+    match identification {
+        Some(identification) => {
+            // let company_house_number = format!("{:0>8}", identification.registration_number.unwrap_or_else(f));
+            let company_house_number = identification.registration_number;
+
+            match company_house_number {
+                Some(company_house_number) => return Some((company_house_number, Entitykind::Company)),
+                None => {return None}
+            }  
+        },
+        None => return None,
+    }
+}
+
+
 #[derive(Queryable, Selectable, Default, Insertable, Serialize, Deserialize)]
 #[diesel(table_name = crate::schema::entity)]
 #[diesel(check_for_backend(diesel::pg::Pg))]
@@ -155,18 +179,11 @@ impl TryFrom<(OfficerListItem, bool)> for Entity {
         let officer = value.0;
         let is_root = value.1;
 
-        // TODO: this should be simplified
-        let identification = match officer.identification {
-            Some(identification) => identification,
+        // TODO: need method to take indentification.eregistration_num
+        let (company_house_number, entity_kind) = match matchNumberToKind(officer.person_number, officer.identification) {
+            Some((company_house_number, entity_kind)) => (company_house_number, entity_kind),
             None => return Err(()),
         };
-
-        let company_house_number = match identification.registration_number {
-            Some(registration_numer) => registration_numer,
-            None => return Err(()),
-        };
-
-        let company_house_number = format!("{:0>8}", company_house_number);
 
         let (country, postal_code) = match officer.address {
             Some(address) => (address.country, address.postal_code),
@@ -179,7 +196,7 @@ impl TryFrom<(OfficerListItem, bool)> for Entity {
             id: Uuid::new_v4(),
             company_house_number,
             name: officer.name,
-            kind: officer.officer_role.into(),
+            kind: entity_kind,
             country: country,
             postal_code: postal_code,
             date_of_origin: doi,

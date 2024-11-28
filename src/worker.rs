@@ -54,6 +54,7 @@ impl Worker {
                     info!("Job completed successfully")
                 }
                 Err(e) => {
+                    println!("Job had and error, error: {:?}", e);
                     warn!("Job had and error, error: {:?}", e)
                 }
             }

@@ -112,7 +112,7 @@ pub struct OfficerListItem {
     pub nationality: Option<String>,
     pub occupation: Option<String>,
     pub officer_role: Option<String>,
-    pub person_numer: Option<String>,
+    pub person_number: Option<String>,
     pub principal_office_address: Option<PrincipalOfficerAddress>,
     pub resigned_on: Option<NaiveDate>,
     pub responsibilities: Option<String>,

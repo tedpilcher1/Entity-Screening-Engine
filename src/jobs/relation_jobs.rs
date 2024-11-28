@@ -1,3 +1,4 @@
+use log::warn;
 use uuid::Uuid;
 use serde::{Deserialize, Serialize};
 
@@ -41,18 +42,22 @@ impl RelationJob {
             let entity: Result<Entity, ()> = (shareholder, false).try_into();
             let entity = match entity {
                 Ok(entity) => entity,
-                Err(_) => return Ok(()),
+                Err(_) => {
+                    warn!("Failed to convert to entity."); // todo improve log
+                    continue;
+                }
             };
 
             let parent_id = database.insert_entity(&entity, self.check_id)?;
-            database.insert_relationship(Relationship {
+            match database.insert_relationship(Relationship {
                 parent_id,
                 child_id: self.child_id,
                 kind: Relationshipkind::Shareholder,
-            })?;
-            
-            self.queue_further_jobs(database, producer, &entity).await?;
-
+            }) {
+                Ok(_) => self.queue_further_jobs(database, producer, &entity).await?,
+                // log error and continue
+                Err(e) => println!("Inserting relation failed for shareholder, error: {:?}", e),
+            }
         }
         Ok(())
     }
@@ -65,17 +70,22 @@ impl RelationJob {
             let entity: Result<Entity, ()> = (officer, false).try_into();
             let entity = match entity {
                 Ok(entity) => entity,
-                Err(_) => return Ok(()),
+                Err(_) => {
+                    warn!("Failed to convert to entity."); // todo improve log
+                    continue;
+                },
             };
 
             let parent_id = database.insert_entity(&entity, self.check_id)?;
-            database.insert_relationship(Relationship {
+            match database.insert_relationship(Relationship {
                 parent_id,
                 child_id: self.child_id,
                 kind: Relationshipkind::Officer,
-            })?;
-
-            self.queue_further_jobs(database, producer, &entity).await?;
+            }) {
+                Ok(_) => self.queue_further_jobs(database, producer, &entity).await?,
+                // log error and continue
+                Err(e) => println!("Inserting relation failed for officer, error: {:?}", e),
+            }
         }
 
         Ok(())
