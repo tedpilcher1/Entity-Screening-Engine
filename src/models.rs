@@ -5,13 +5,16 @@ use diesel::pg::{Pg, PgValue};
 use diesel::prelude::{Insertable, Queryable};
 use diesel::serialize::{self, IsNull, Output, ToSql};
 use diesel::Selectable;
+use log::warn;
 use serde::{Deserialize, Serialize};
 use std::io::Write;
 use uuid::Uuid;
 
 use crate::company_house_response_types::{
-    CompanyItem, Identification, OfficerListItem, ShareholderListItem,
+    CompanyItem, Identification, OfficerListItem, OfficerListResponse, ShareholderList,
+    ShareholderListItem,
 };
+use crate::schema::entity;
 
 type CompanyHouseNumber = String;
 
@@ -134,6 +137,38 @@ impl Entity {
             company_house_number,
             ..Default::default()
         }
+    }
+}
+
+impl From<OfficerListResponse> for Vec<Entity> {
+    fn from(officers: OfficerListResponse) -> Self {
+        let mut entity_vec: Vec<Entity> = Vec::new();
+        for officer in officers.items.unwrap_or_default() {
+            let entity: Result<Entity, ()> = (officer, false).try_into();
+            match entity {
+                Ok(entity) => entity_vec.push(entity),
+                Err(_) => {
+                    warn!("Failed to convert to entity."); // todo improve log
+                }
+            };
+        }
+        entity_vec
+    }
+}
+
+impl From<ShareholderList> for Vec<Entity> {
+    fn from(shareholders: ShareholderList) -> Self {
+        let mut entity_vec: Vec<Entity> = Vec::new();
+        for shareholder in shareholders.items.unwrap_or_default() {
+            let entity: Result<Entity, ()> = (shareholder, false).try_into();
+            match entity {
+                Ok(entity) => entity_vec.push(entity),
+                Err(_) => {
+                    warn!("Failed to convert to entity."); // todo improve log
+                }
+            }
+        }
+        entity_vec
     }
 }
 

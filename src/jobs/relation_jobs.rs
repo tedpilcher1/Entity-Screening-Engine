@@ -1,10 +1,9 @@
-use log::warn;
 use serde::{Deserialize, Serialize};
 use uuid::Uuid;
 
 use crate::company_house_apis::{get_officers, get_shareholders};
 use crate::jobs::jobs::JobKind;
-use crate::models::{Entity, Relationship, Relationshipkind};
+use crate::models::{Entity, Entitykind, Relationship, Relationshipkind};
 use crate::postgres::Database;
 use crate::pulsar::PulsarProducer;
 
@@ -32,77 +31,48 @@ impl RelationJob {
         database: &mut Database,
         producer: &mut PulsarProducer,
     ) -> Result<(), failure::Error> {
-        match self.relation_job_kind {
-            RelationJobKind::Shareholders => self.shareholder_job(database, producer).await,
-            RelationJobKind::Officers => self.officer_job(database, producer).await,
-            RelationJobKind::Appointments => self.appointment_job().await,
-        }
+        let entities: Vec<Entity> = match self.relation_job_kind {
+            RelationJobKind::Shareholders => {
+                get_shareholders(&self.company_house_number).await?.into()
+            }
+            RelationJobKind::Officers => get_officers(&self.company_house_number).await?.into(),
+            RelationJobKind::Appointments => vec![],
+        };
+
+        let relationship_kind = match self.relation_job_kind {
+            RelationJobKind::Shareholders => Relationshipkind::Shareholder,
+            RelationJobKind::Officers => Relationshipkind::Officer,
+            RelationJobKind::Appointments => unimplemented!(),
+        };
+
+        self.do_job(entities, relationship_kind, database, producer)
+            .await
     }
 
-    async fn shareholder_job(
+    async fn do_job(
         &self,
+        entities: Vec<Entity>,
+        relationship_kind: Relationshipkind,
         database: &mut Database,
         producer: &mut PulsarProducer,
     ) -> Result<(), failure::Error> {
-        let shareholders_list = get_shareholders(&self.company_house_number).await?;
-        for shareholder in shareholders_list.items.unwrap_or_default() {
-            let entity: Result<Entity, ()> = (shareholder, false).try_into();
-            let entity = match entity {
-                Ok(entity) => entity,
-                Err(_) => {
-                    warn!("Failed to convert to entity."); // todo improve log
-                    continue;
-                }
-            };
-
+        for entity in entities {
             let parent_id = database.insert_entity(&entity, self.check_id)?;
             match database.insert_relationship(Relationship {
                 parent_id,
                 child_id: self.child_id,
-                kind: Relationshipkind::Shareholder,
+                kind: relationship_kind,
             }) {
                 Ok(_) => self.queue_further_jobs(database, producer, &entity).await?,
                 // log error and continue
-                Err(e) => println!("Inserting relation failed for shareholder, error: {:?}", e),
+                Err(e) => println!(
+                    "Inserting relation failed for {:?}, error: {:?}",
+                    relationship_kind, e
+                ),
             }
-        }
-        Ok(())
-    }
-
-    async fn officer_job(
-        &self,
-        database: &mut Database,
-        producer: &mut PulsarProducer,
-    ) -> Result<(), failure::Error> {
-        let officers = get_officers(&self.company_house_number).await?;
-
-        for officer in officers.items.unwrap_or_default() {
-            let entity: Result<Entity, ()> = (officer, false).try_into();
-            let entity = match entity {
-                Ok(entity) => entity,
-                Err(_) => {
-                    warn!("Failed to convert to entity."); // todo improve log
-                    continue;
-                }
-            };
-
-            let parent_id = database.insert_entity(&entity, self.check_id)?;
-            match database.insert_relationship(Relationship {
-                parent_id,
-                child_id: self.child_id,
-                kind: Relationshipkind::Officer,
-            }) {
-                Ok(_) => self.queue_further_jobs(database, producer, &entity).await?,
-                // log error and continue
-                Err(e) => println!("Inserting relation failed for officer, error: {:?}", e),
-            }
+            self.queue_further_jobs(database, producer, &entity).await?;
         }
 
-        Ok(())
-    }
-
-    async fn appointment_job(&self) -> Result<(), failure::Error> {
-        // TODO
         Ok(())
     }
 
@@ -112,50 +82,56 @@ impl RelationJob {
         producer: &mut PulsarProducer,
         entity: &Entity,
     ) -> Result<(), failure::Error> {
-        if self.remaining_officer_depth > 0 {
-            let job_kind = JobKind::RelationJob(RelationJob {
-                child_id: entity.id,
-                check_id: self.check_id,
-                company_house_number: entity.company_house_number.clone(),
-                remaining_shareholder_depth: self.remaining_shareholder_depth,
-                remaining_officer_depth: self.remaining_officer_depth - 1,
-                remaining_appointment_depth: self.remaining_appointment_depth,
-                relation_job_kind: RelationJobKind::Shareholders,
-            });
+        match entity.kind {
+            Entitykind::Company => {
+                if self.remaining_officer_depth > 0 {
+                    let job_kind = JobKind::RelationJob(RelationJob {
+                        child_id: entity.id,
+                        check_id: self.check_id,
+                        company_house_number: entity.company_house_number.clone(),
+                        remaining_shareholder_depth: self.remaining_shareholder_depth,
+                        remaining_officer_depth: self.remaining_officer_depth - 1,
+                        remaining_appointment_depth: self.remaining_appointment_depth,
+                        relation_job_kind: RelationJobKind::Shareholders,
+                    });
 
-            producer
-                .enqueue_job(database, self.check_id, job_kind)
-                .await?;
-        }
-        if self.remaining_shareholder_depth > 0 {
-            let job_kind = JobKind::RelationJob(RelationJob {
-                child_id: entity.id,
-                check_id: self.check_id,
-                company_house_number: entity.company_house_number.clone(),
-                remaining_shareholder_depth: self.remaining_shareholder_depth - 1,
-                remaining_officer_depth: self.remaining_officer_depth,
-                remaining_appointment_depth: self.remaining_appointment_depth,
-                relation_job_kind: RelationJobKind::Officers,
-            });
+                    producer
+                        .enqueue_job(database, self.check_id, job_kind)
+                        .await?;
+                }
+                if self.remaining_shareholder_depth > 0 {
+                    let job_kind = JobKind::RelationJob(RelationJob {
+                        child_id: entity.id,
+                        check_id: self.check_id,
+                        company_house_number: entity.company_house_number.clone(),
+                        remaining_shareholder_depth: self.remaining_shareholder_depth - 1,
+                        remaining_officer_depth: self.remaining_officer_depth,
+                        remaining_appointment_depth: self.remaining_appointment_depth,
+                        relation_job_kind: RelationJobKind::Officers,
+                    });
 
-            producer
-                .enqueue_job(database, self.check_id, job_kind)
-                .await?;
-        }
-        if self.remaining_appointment_depth > 0 {
-            let job_kind = JobKind::RelationJob(RelationJob {
-                child_id: entity.id,
-                check_id: self.check_id,
-                company_house_number: entity.company_house_number.clone(),
-                remaining_shareholder_depth: self.remaining_shareholder_depth,
-                remaining_officer_depth: self.remaining_officer_depth,
-                remaining_appointment_depth: self.remaining_appointment_depth - 1,
-                relation_job_kind: RelationJobKind::Appointments,
-            });
+                    producer
+                        .enqueue_job(database, self.check_id, job_kind)
+                        .await?;
+                }
+            }
+            Entitykind::Individual => {
+                if self.remaining_appointment_depth > 0 {
+                    let job_kind = JobKind::RelationJob(RelationJob {
+                        child_id: entity.id,
+                        check_id: self.check_id,
+                        company_house_number: entity.company_house_number.clone(),
+                        remaining_shareholder_depth: self.remaining_shareholder_depth,
+                        remaining_officer_depth: self.remaining_officer_depth,
+                        remaining_appointment_depth: self.remaining_appointment_depth - 1,
+                        relation_job_kind: RelationJobKind::Appointments,
+                    });
 
-            producer
-                .enqueue_job(database, self.check_id, job_kind)
-                .await?;
+                    producer
+                        .enqueue_job(database, self.check_id, job_kind)
+                        .await?;
+                }
+            }
         }
 
         Ok(())
