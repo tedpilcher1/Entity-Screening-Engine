@@ -9,7 +9,9 @@ use serde::{Deserialize, Serialize};
 use std::io::Write;
 use uuid::Uuid;
 
-use crate::company_house_response_types::{CompanyItem, Identification, OfficerListItem, ShareholderListItem};
+use crate::company_house_response_types::{
+    CompanyItem, Identification, OfficerListItem, ShareholderListItem,
+};
 
 type CompanyHouseNumber = String;
 
@@ -85,11 +87,13 @@ impl From<Option<String>> for Entitykind {
     }
 }
 
-fn matchNumberToKind(person_number: Option<String>, identification: Option<Identification>) -> Option<(CompanyHouseNumber, Entitykind)> {
-
+fn matchNumberToKind(
+    person_number: Option<String>,
+    identification: Option<Identification>,
+) -> Option<(CompanyHouseNumber, Entitykind)> {
     match person_number {
         Some(person_number) => return Some((person_number, Entitykind::Individual)),
-        None => {},
+        None => {}
     }
 
     match identification {
@@ -98,14 +102,15 @@ fn matchNumberToKind(person_number: Option<String>, identification: Option<Ident
             let company_house_number = identification.registration_number;
 
             match company_house_number {
-                Some(company_house_number) => return Some((company_house_number, Entitykind::Company)),
-                None => {return None}
-            }  
-        },
+                Some(company_house_number) => {
+                    return Some((company_house_number, Entitykind::Company))
+                }
+                None => return None,
+            }
+        }
         None => return None,
     }
 }
-
 
 #[derive(Queryable, Selectable, Default, Insertable, Serialize, Deserialize)]
 #[diesel(table_name = crate::schema::entity)]
@@ -180,10 +185,11 @@ impl TryFrom<(OfficerListItem, bool)> for Entity {
         let is_root = value.1;
 
         // TODO: need method to take indentification.eregistration_num
-        let (company_house_number, entity_kind) = match matchNumberToKind(officer.person_number, officer.identification) {
-            Some((company_house_number, entity_kind)) => (company_house_number, entity_kind),
-            None => return Err(()),
-        };
+        let (company_house_number, entity_kind) =
+            match matchNumberToKind(officer.person_number, officer.identification) {
+                Some((company_house_number, entity_kind)) => (company_house_number, entity_kind),
+                None => return Err(()),
+            };
 
         let (country, postal_code) = match officer.address {
             Some(address) => (address.country, address.postal_code),

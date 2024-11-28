@@ -1,10 +1,12 @@
 use chrono::{NaiveDate, NaiveDateTime, Utc};
 use diesel::sql_types::Timestamp;
-use diesel::{prelude::*, update};
 use diesel::{insert_into, Connection, PgConnection};
+use diesel::{prelude::*, update};
 use uuid::Uuid;
 
-use crate::models::{Check, CheckEntityMap, CheckJobMap, Entity, Job, Relationship, Relationshipkind};
+use crate::models::{
+    Check, CheckEntityMap, CheckJobMap, Entity, Job, Relationship, Relationshipkind,
+};
 use crate::schema::{check, check_entity_map, check_job_map, entity, job, relationship};
 
 pub struct Database {
@@ -139,8 +141,7 @@ impl Database {
                     id,
                     enqueued_at: Utc::now().naive_utc(),
                     completed_at: None,
-                }
-                )
+                })
                 .execute(conn)?;
 
             insert_into(check_job_map::table)
@@ -149,7 +150,6 @@ impl Database {
                     job_id: id,
                 })
                 .execute(conn)?;
-
 
             diesel::result::QueryResult::Ok(())
         })?;
@@ -166,8 +166,11 @@ impl Database {
         Ok(())
     }
 
-    pub fn check_completed_at(&mut self, check_id: Uuid) -> Result<Option<NaiveDateTime>, failure::Error> {
-        let incomplete_jobs =  job::table
+    pub fn check_completed_at(
+        &mut self,
+        check_id: Uuid,
+    ) -> Result<Option<NaiveDateTime>, failure::Error> {
+        let incomplete_jobs = job::table
             .inner_join(check_job_map::table.on(check_job_map::job_id.eq(job::id)))
             .filter(check_job_map::check_id.eq(check_id))
             .filter(job::completed_at.is_null())
@@ -175,7 +178,7 @@ impl Database {
             .load::<Uuid>(&mut self.conn)?;
 
         if incomplete_jobs.len() > 0 {
-            return Ok(None)
+            return Ok(None);
         }
 
         let latest_completion = job::table

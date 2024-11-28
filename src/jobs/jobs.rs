@@ -30,5 +30,5 @@ impl DeserializeMessage for Job {
 
 #[derive(Serialize, Deserialize, Debug)]
 pub enum JobKind {
-    RelationJob(RelationJob)
+    RelationJob(RelationJob),
 }

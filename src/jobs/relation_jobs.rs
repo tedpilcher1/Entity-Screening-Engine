@@ -1,12 +1,12 @@
 use log::warn;
-use uuid::Uuid;
 use serde::{Deserialize, Serialize};
+use uuid::Uuid;
 
-use crate::pulsar::PulsarProducer;
-use crate::postgres::Database;
-use crate::company_house_apis::{get_shareholders, get_officers};
-use crate::models::{Entity, Relationship, Relationshipkind};
+use crate::company_house_apis::{get_officers, get_shareholders};
 use crate::jobs::jobs::JobKind;
+use crate::models::{Entity, Relationship, Relationshipkind};
+use crate::postgres::Database;
+use crate::pulsar::PulsarProducer;
 
 #[derive(Serialize, Deserialize, Debug)]
 pub struct RelationJob {
@@ -27,8 +27,11 @@ pub enum RelationJobKind {
 }
 
 impl RelationJob {
-
-    pub async fn do_work (&self, database: &mut Database, producer: &mut PulsarProducer) -> Result<(), failure::Error> {
+    pub async fn do_work(
+        &self,
+        database: &mut Database,
+        producer: &mut PulsarProducer,
+    ) -> Result<(), failure::Error> {
         match self.relation_job_kind {
             RelationJobKind::Shareholders => self.shareholder_job(database, producer).await,
             RelationJobKind::Officers => self.officer_job(database, producer).await,
@@ -36,7 +39,11 @@ impl RelationJob {
         }
     }
 
-    async fn shareholder_job(&self, database: &mut Database, producer: &mut PulsarProducer) -> Result<(), failure::Error> {
+    async fn shareholder_job(
+        &self,
+        database: &mut Database,
+        producer: &mut PulsarProducer,
+    ) -> Result<(), failure::Error> {
         let shareholders_list = get_shareholders(&self.company_house_number).await?;
         for shareholder in shareholders_list.items.unwrap_or_default() {
             let entity: Result<Entity, ()> = (shareholder, false).try_into();
@@ -62,8 +69,11 @@ impl RelationJob {
         Ok(())
     }
 
-    async fn officer_job(&self, database: &mut Database, producer: &mut PulsarProducer) -> Result<(), failure::Error> {
-
+    async fn officer_job(
+        &self,
+        database: &mut Database,
+        producer: &mut PulsarProducer,
+    ) -> Result<(), failure::Error> {
         let officers = get_officers(&self.company_house_number).await?;
 
         for officer in officers.items.unwrap_or_default() {
@@ -73,7 +83,7 @@ impl RelationJob {
                 Err(_) => {
                     warn!("Failed to convert to entity."); // todo improve log
                     continue;
-                },
+                }
             };
 
             let parent_id = database.insert_entity(&entity, self.check_id)?;
@@ -96,8 +106,12 @@ impl RelationJob {
         Ok(())
     }
 
-    async fn queue_further_jobs(&self, database: &mut Database, producer: &mut PulsarProducer, entity: &Entity) -> Result<(), failure::Error> {
-    
+    async fn queue_further_jobs(
+        &self,
+        database: &mut Database,
+        producer: &mut PulsarProducer,
+        entity: &Entity,
+    ) -> Result<(), failure::Error> {
         if self.remaining_officer_depth > 0 {
             let job_kind = JobKind::RelationJob(RelationJob {
                 child_id: entity.id,
@@ -109,7 +123,9 @@ impl RelationJob {
                 relation_job_kind: RelationJobKind::Shareholders,
             });
 
-            producer.enqueue_job(database, self.check_id, job_kind).await?;
+            producer
+                .enqueue_job(database, self.check_id, job_kind)
+                .await?;
         }
         if self.remaining_shareholder_depth > 0 {
             let job_kind = JobKind::RelationJob(RelationJob {
@@ -122,7 +138,9 @@ impl RelationJob {
                 relation_job_kind: RelationJobKind::Officers,
             });
 
-            producer.enqueue_job(database, self.check_id, job_kind).await?;
+            producer
+                .enqueue_job(database, self.check_id, job_kind)
+                .await?;
         }
         if self.remaining_appointment_depth > 0 {
             let job_kind = JobKind::RelationJob(RelationJob {
@@ -135,7 +153,9 @@ impl RelationJob {
                 relation_job_kind: RelationJobKind::Appointments,
             });
 
-            producer.enqueue_job(database, self.check_id, job_kind).await?;
+            producer
+                .enqueue_job(database, self.check_id, job_kind)
+                .await?;
         }
 
         Ok(())

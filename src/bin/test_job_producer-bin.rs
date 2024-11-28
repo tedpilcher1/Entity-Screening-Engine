@@ -1,7 +1,13 @@
 use dotenv::dotenv;
 use uuid::Uuid;
 use Company_Investigation::{
-    jobs::{jobs::JobKind, relation_jobs::{RelationJob, RelationJobKind}}, models::Entity, postgres::Database, pulsar::PulsarClient
+    jobs::{
+        jobs::JobKind,
+        relation_jobs::{RelationJob, RelationJobKind},
+    },
+    models::Entity,
+    postgres::Database,
+    pulsar::PulsarClient,
 };
 
 async fn simulate_find_shareholders_endpoint() {

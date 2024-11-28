@@ -8,7 +8,13 @@ use log::warn;
 use serde::{Deserialize, Serialize};
 use uuid::Uuid;
 use Company_Investigation::{
-    jobs::{jobs::JobKind, relation_jobs::{RelationJob, RelationJobKind}}, models::{Entity, Relationshipkind}, postgres::Database, pulsar::PulsarClient
+    jobs::{
+        jobs::JobKind,
+        relation_jobs::{RelationJob, RelationJobKind},
+    },
+    models::{Entity, Relationshipkind},
+    postgres::Database,
+    pulsar::PulsarClient,
 };
 
 type OfficerDepth = usize;
@@ -99,7 +105,7 @@ async fn start_relations_check(
                     remaining_officer_depth: validated_officer_depth,
                     remaining_appointment_depth: 0, // TODO
                     relation_job_kind: RelationJobKind::Officers,
-                })
+                }),
             )
             .await?;
     }
@@ -117,7 +123,7 @@ async fn start_relations_check(
                     remaining_officer_depth: validated_officer_depth,
                     remaining_appointment_depth: 0, // TODO
                     relation_job_kind: RelationJobKind::Officers,
-                })
+                }),
             )
             .await?;
     }
