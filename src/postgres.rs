@@ -79,7 +79,11 @@ impl Database {
             .inner_join(relationship::table.on(relationship::parent_id.eq(entity::id)))
             .filter(relationship::child_id.eq(entity_id))
             .filter(relationship::kind.eq(relationship_kind))
-            .select((relationship::parent_id, relationship::started_on, relationship::ended_on))
+            .select((
+                relationship::parent_id,
+                relationship::started_on,
+                relationship::ended_on,
+            ))
             .load::<(Uuid, Option<NaiveDate>, Option<NaiveDate>)>(&mut self.conn)?;
 
         Ok(relations)

@@ -65,14 +65,18 @@ impl RelationJob {
                 started_on: entity_relation.started_on,
                 ended_on: entity_relation.ended_on,
             }) {
-                Ok(_) => self.queue_further_jobs(database, producer, &entity_relation.entity).await?,
+                Ok(_) => {
+                    self.queue_further_jobs(database, producer, &entity_relation.entity)
+                        .await?
+                }
                 // log error and continue
                 Err(e) => println!(
                     "Inserting relation failed for {:?}, error: {:?}",
                     relationship_kind, e
                 ),
             }
-            self.queue_further_jobs(database, producer, &entity_relation.entity).await?;
+            self.queue_further_jobs(database, producer, &entity_relation.entity)
+                .await?;
         }
 
         Ok(())

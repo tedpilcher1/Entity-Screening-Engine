@@ -215,8 +215,6 @@ impl TryFrom<(ShareholderListItem, bool)> for EntityRelation {
             is_root,
         };
 
-
-
         Ok(Self {
             entity,
             started_on: shareholder.notified_on,
