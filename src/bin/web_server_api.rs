@@ -37,7 +37,7 @@ fn get_entity_response(check_id: Uuid) -> Result<EntityResponse, failure::Error>
                 .map(|officer| Relation {
                     entity_id: officer.0,
                     started_on: officer.1,
-                    completed_on: officer.2,
+                    ended_on: officer.2,
                 })
                 .collect(),
             shareholders: shareholders
@@ -45,7 +45,7 @@ fn get_entity_response(check_id: Uuid) -> Result<EntityResponse, failure::Error>
                 .map(|shareholder| Relation {
                     entity_id: shareholder.0,
                     started_on: shareholder.1,
-                    completed_on: shareholder.2,
+                    ended_on: shareholder.2,
                 })
                 .collect(),
         })
@@ -62,7 +62,7 @@ fn get_entity_response(check_id: Uuid) -> Result<EntityResponse, failure::Error>
 pub struct Relation {
     entity_id: Uuid,
     started_on: Option<NaiveDate>,
-    completed_on: Option<NaiveDate>,
+    ended_on: Option<NaiveDate>,
 }
 
 #[derive(Serialize, Deserialize)]
