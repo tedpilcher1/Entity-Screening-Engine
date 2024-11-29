@@ -3,7 +3,7 @@ use uuid::Uuid;
 
 use crate::company_house_apis::{get_officers, get_shareholders};
 use crate::jobs::jobs::JobKind;
-use crate::models::{Entity, Entitykind, Relationship, Relationshipkind};
+use crate::models::{Entity, EntityRelation, Entitykind, Relationship, Relationshipkind};
 use crate::postgres::Database;
 use crate::pulsar::PulsarProducer;
 
@@ -31,7 +31,7 @@ impl RelationJob {
         database: &mut Database,
         producer: &mut PulsarProducer,
     ) -> Result<(), failure::Error> {
-        let entities: Vec<Entity> = match self.relation_job_kind {
+        let entities: Vec<EntityRelation> = match self.relation_job_kind {
             RelationJobKind::Shareholders => {
                 get_shareholders(&self.company_house_number).await?.into()
             }
@@ -51,26 +51,28 @@ impl RelationJob {
 
     async fn do_job(
         &self,
-        entities: Vec<Entity>,
+        entity_relations: Vec<EntityRelation>,
         relationship_kind: Relationshipkind,
         database: &mut Database,
         producer: &mut PulsarProducer,
     ) -> Result<(), failure::Error> {
-        for entity in entities {
-            let parent_id = database.insert_entity(&entity, self.check_id)?;
+        for entity_relation in entity_relations {
+            let parent_id = database.insert_entity(&entity_relation.entity, self.check_id)?;
             match database.insert_relationship(Relationship {
                 parent_id,
                 child_id: self.child_id,
                 kind: relationship_kind,
+                started_on: entity_relation.started_on,
+                ended_on: entity_relation.ended_on,
             }) {
-                Ok(_) => self.queue_further_jobs(database, producer, &entity).await?,
+                Ok(_) => self.queue_further_jobs(database, producer, &entity_relation.entity).await?,
                 // log error and continue
                 Err(e) => println!(
                     "Inserting relation failed for {:?}, error: {:?}",
                     relationship_kind, e
                 ),
             }
-            self.queue_further_jobs(database, producer, &entity).await?;
+            self.queue_further_jobs(database, producer, &entity_relation.entity).await?;
         }
 
         Ok(())

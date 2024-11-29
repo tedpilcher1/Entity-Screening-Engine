@@ -74,13 +74,13 @@ impl Database {
         &mut self,
         entity_id: Uuid,
         relationship_kind: Relationshipkind,
-    ) -> Result<Vec<Entity>, failure::Error> {
+    ) -> Result<Vec<(Uuid, Option<NaiveDate>, Option<NaiveDate>)>, failure::Error> {
         let relations = entity::table
             .inner_join(relationship::table.on(relationship::parent_id.eq(entity::id)))
             .filter(relationship::child_id.eq(entity_id))
             .filter(relationship::kind.eq(relationship_kind))
-            .select(entity::all_columns)
-            .load::<Entity>(&mut self.conn)?;
+            .select((relationship::parent_id, relationship::started_on, relationship::ended_on))
+            .load::<(Uuid, Option<NaiveDate>, Option<NaiveDate>)>(&mut self.conn)?;
 
         Ok(relations)
     }

@@ -1,4 +1,4 @@
-use chrono::NaiveDateTime;
+use chrono::{NaiveDate, NaiveDateTime};
 use diesel::deserialize::{self, FromSql, FromSqlRow};
 use diesel::expression::AsExpression;
 use diesel::pg::{Pg, PgValue};
@@ -14,7 +14,6 @@ use crate::company_house_response_types::{
     CompanyItem, Identification, OfficerListItem, OfficerListResponse, ShareholderList,
     ShareholderListItem,
 };
-use crate::schema::entity;
 
 type CompanyHouseNumber = String;
 
@@ -140,39 +139,45 @@ impl Entity {
     }
 }
 
-impl From<OfficerListResponse> for Vec<Entity> {
+pub struct EntityRelation {
+    pub entity: Entity,
+    pub started_on: Option<NaiveDate>,
+    pub ended_on: Option<NaiveDate>,
+}
+
+impl From<OfficerListResponse> for Vec<EntityRelation> {
     fn from(officers: OfficerListResponse) -> Self {
-        let mut entity_vec: Vec<Entity> = Vec::new();
+        let mut entity_relations: Vec<EntityRelation> = Vec::new();
         for officer in officers.items.unwrap_or_default() {
-            let entity: Result<Entity, ()> = (officer, false).try_into();
+            let entity: Result<EntityRelation, ()> = (officer, false).try_into();
             match entity {
-                Ok(entity) => entity_vec.push(entity),
+                Ok(entity) => entity_relations.push(entity),
                 Err(_) => {
                     warn!("Failed to convert to entity."); // todo improve log
                 }
             };
         }
-        entity_vec
+        entity_relations
     }
 }
 
-impl From<ShareholderList> for Vec<Entity> {
+impl From<ShareholderList> for Vec<EntityRelation> {
     fn from(shareholders: ShareholderList) -> Self {
-        let mut entity_vec: Vec<Entity> = Vec::new();
+        let mut entity_relations: Vec<EntityRelation> = Vec::new();
         for shareholder in shareholders.items.unwrap_or_default() {
-            let entity: Result<Entity, ()> = (shareholder, false).try_into();
+            let entity: Result<EntityRelation, ()> = (shareholder, false).try_into();
             match entity {
-                Ok(entity) => entity_vec.push(entity),
+                Ok(entity) => entity_relations.push(entity),
                 Err(_) => {
                     warn!("Failed to convert to entity."); // todo improve log
                 }
             }
         }
-        entity_vec
+        entity_relations
     }
 }
 
-impl TryFrom<(ShareholderListItem, bool)> for Entity {
+impl TryFrom<(ShareholderListItem, bool)> for EntityRelation {
     type Error = ();
 
     fn try_from(value: (ShareholderListItem, bool)) -> Result<Self, Self::Error> {
@@ -199,7 +204,7 @@ impl TryFrom<(ShareholderListItem, bool)> for Entity {
 
         let doi = Some("00/00/0000".to_string()); // TODO THIS PROPERLY
 
-        Ok(Self {
+        let entity = Entity {
             id: Uuid::new_v4(),
             company_house_number,
             name: shareholder.name,
@@ -208,11 +213,19 @@ impl TryFrom<(ShareholderListItem, bool)> for Entity {
             postal_code: postal_code,
             date_of_origin: doi,
             is_root,
+        };
+
+
+
+        Ok(Self {
+            entity,
+            started_on: shareholder.notified_on,
+            ended_on: shareholder.ceased_on,
         })
     }
 }
 
-impl TryFrom<(OfficerListItem, bool)> for Entity {
+impl TryFrom<(OfficerListItem, bool)> for EntityRelation {
     type Error = ();
 
     fn try_from(value: (OfficerListItem, bool)) -> Result<Self, Self::Error> {
@@ -233,7 +246,7 @@ impl TryFrom<(OfficerListItem, bool)> for Entity {
 
         let doi = Some("00/00/0000".to_string()); // TODO THIS PROPERLY
 
-        Ok(Self {
+        let entity = Entity {
             id: Uuid::new_v4(),
             company_house_number,
             name: officer.name,
@@ -242,6 +255,12 @@ impl TryFrom<(OfficerListItem, bool)> for Entity {
             postal_code: postal_code,
             date_of_origin: doi,
             is_root,
+        };
+
+        Ok(Self {
+            entity,
+            started_on: officer.appointed_on,
+            ended_on: officer.resigned_on,
         })
     }
 }
@@ -269,6 +288,8 @@ pub struct Relationship {
     pub parent_id: Uuid,
     pub child_id: Uuid,
     pub kind: Relationshipkind,
+    pub started_on: Option<NaiveDate>,
+    pub ended_on: Option<NaiveDate>,
 }
 
 #[derive(Queryable, Selectable, Insertable)]

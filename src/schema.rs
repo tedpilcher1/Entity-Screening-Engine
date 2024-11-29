@@ -63,6 +63,8 @@ diesel::table! {
         parent_id -> Uuid,
         child_id -> Uuid,
         kind -> Relationshipkind,
+        started_on -> Nullable<Date>,
+        ended_on -> Nullable<Date>,
     }
 }
 

@@ -1,6 +1,6 @@
 use std::cmp::min;
 
-use chrono::NaiveDateTime;
+use chrono::{NaiveDate, NaiveDateTime};
 use dotenv::dotenv;
 
 use actix_web::{get, post, web, App, HttpResponse, HttpServer, Responder};
@@ -32,12 +32,17 @@ fn get_entity_response(check_id: Uuid) -> Result<EntityResponse, failure::Error>
         let shareholders = database.get_relations(entity.id, Relationshipkind::Shareholder)?;
         entities.push(EntityWithRelations {
             entity,
-            officers: officers.into_iter().map(|officer| officer.id).collect(),
-            shareholders: shareholders
-                .into_iter()
-                .map(|shareholder| shareholder.id)
-                .collect(),
-        });
+            officers: officers.into_iter().map(|officer| Relation{
+                entity_id: officer.0,
+                started_on: officer.1,
+                completed_on: officer.2,
+            }).collect(),
+            shareholders: shareholders.into_iter().map(|shareholder| Relation{
+                entity_id: shareholder.0,
+                started_on: shareholder.1,
+                completed_on: shareholder.2,
+            }).collect(),
+        })
     }
 
     Ok(EntityResponse {
@@ -48,10 +53,17 @@ fn get_entity_response(check_id: Uuid) -> Result<EntityResponse, failure::Error>
 }
 
 #[derive(Serialize, Deserialize)]
+pub struct Relation {
+    entity_id: Uuid,
+    started_on: Option<NaiveDate>,
+    completed_on: Option<NaiveDate>,
+}
+
+#[derive(Serialize, Deserialize)]
 struct EntityWithRelations {
     entity: Entity,
-    officers: Vec<Uuid>,
-    shareholders: Vec<Uuid>,
+    officers: Vec<Relation>,
+    shareholders: Vec<Relation>,
 }
 
 #[derive(Serialize, Deserialize)]
