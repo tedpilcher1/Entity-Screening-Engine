@@ -192,4 +192,12 @@ impl Database {
 
         Ok(latest_completion)
     }
+
+    pub fn get_checks(
+        &mut self,
+    ) -> Result<Vec<Check>, failure::Error> {
+        Ok(check::table
+            .select(check::all_columns)
+            .load::<Check>(&mut self.conn)?)
+    }
 }
