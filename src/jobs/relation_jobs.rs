@@ -2,7 +2,7 @@ use log::warn;
 use serde::{Deserialize, Serialize};
 use uuid::Uuid;
 
-use crate::company_house::company_house_apis::{get_appointments, get_officers, get_shareholders};
+use crate::company_house::company_house_apis::CompanyHouseClient;
 use crate::jobs::jobs::JobKind;
 use crate::models::{Entity, EntityRelation, Entitykind, Relationship, Relationshipkind};
 use crate::postgres::Database;
@@ -30,13 +30,21 @@ impl RelationJob {
         &self,
         database: &mut Database,
         producer: &mut PulsarProducer,
+        company_house_client: &CompanyHouseClient,
     ) -> Result<(), failure::Error> {
         let entities: Vec<EntityRelation> = match self.relation_job_kind {
-            RelationJobKind::Shareholders => {
-                get_shareholders(&self.company_house_number).await?.into()
-            }
-            RelationJobKind::Officers => get_officers(&self.company_house_number).await?.into(),
-            RelationJobKind::Appointments => get_appointments(&self.officer_id).await?.into(),
+            RelationJobKind::Shareholders => company_house_client
+                .get_shareholders(&self.company_house_number)
+                .await?
+                .into(),
+            RelationJobKind::Officers => company_house_client
+                .get_officers(&self.company_house_number)
+                .await?
+                .into(),
+            RelationJobKind::Appointments => company_house_client
+                .get_appointments(&self.officer_id)
+                .await?
+                .into(),
         };
 
         let relationship_kind = match self.relation_job_kind {

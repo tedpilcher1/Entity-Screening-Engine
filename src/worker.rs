@@ -2,6 +2,7 @@ use futures::TryStreamExt;
 use log::{info, warn};
 
 use crate::{
+    company_house::company_house_apis::CompanyHouseClient,
     jobs::jobs::{Job, JobKind},
     postgres::Database,
     pulsar::{PulsarClient, PulsarConsumer, PulsarProducer},
@@ -11,6 +12,7 @@ pub struct Worker {
     database: Database,
     producer: PulsarProducer,
     consumer: PulsarConsumer,
+    company_house_client: CompanyHouseClient,
 }
 
 impl Worker {
@@ -21,6 +23,7 @@ impl Worker {
             database: Database::connect()?,
             producer: pulsar_client.create_producer().await,
             consumer: pulsar_client.create_consumer().await,
+            company_house_client: CompanyHouseClient::new(),
         })
     }
 
@@ -28,7 +31,11 @@ impl Worker {
         match job.job_kind {
             JobKind::RelationJob(relation_job) => {
                 relation_job
-                    .do_work(&mut self.database, &mut self.producer)
+                    .do_work(
+                        &mut self.database,
+                        &mut self.producer,
+                        &self.company_house_client,
+                    )
                     .await?
             }
         };
