@@ -1,4 +1,4 @@
-mod company_house;
+pub mod company_house;
 pub mod jobs;
 pub mod models;
 pub mod postgres;

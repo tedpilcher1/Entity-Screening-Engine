@@ -10,12 +10,10 @@ use serde::{Deserialize, Serialize};
 use std::io::Write;
 use uuid::Uuid;
 
-use crate::company_house;
 use crate::company_house::company_house_response_types::{
     AppointmentListItem, AppointmentsResponse, CompanyItem, Identification, OfficerListItem,
     OfficerListResponse, ShareholderList, ShareholderListItem,
 };
-use crate::schema::entity;
 
 type CompanyHouseNumber = String;
 
