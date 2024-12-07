@@ -89,7 +89,7 @@ impl From<Option<String>> for Entitykind {
     }
 }
 
-fn matchNumberToKind(
+fn match_number_to_kind(
     person_number: Option<String>,
     identification: Option<Identification>,
 ) -> Option<(CompanyHouseNumber, Entitykind)> {
@@ -246,7 +246,7 @@ impl TryFrom<(OfficerListItem, bool)> for EntityRelation {
 
         // TODO: need method to take indentification.eregistration_num
         let (company_house_number, entity_kind) =
-            match matchNumberToKind(officer.person_number, officer.identification) {
+            match match_number_to_kind(officer.person_number, officer.identification) {
                 Some((company_house_number, entity_kind)) => (company_house_number, entity_kind),
                 None => return Err(()),
             };
