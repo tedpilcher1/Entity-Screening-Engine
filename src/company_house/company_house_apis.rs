@@ -28,8 +28,6 @@ impl CompanyHouseClient {
         &self,
         name: &String,
     ) -> Result<CompanySearchResponse, failure::Error> {
-        let client = Client::new();
-
         let mut params = HashMap::new();
         params.insert("q", name);
 
@@ -39,7 +37,8 @@ impl CompanyHouseClient {
             header::HeaderValue::from_str(&format!("{}", API_KEY.as_str()))?,
         );
 
-        let response = client
+        let response = self
+            .client
             .get(COMPANY_SEARCH_URL)
             .headers(headers)
             .query(&params)
@@ -58,16 +57,13 @@ impl CompanyHouseClient {
             "https://api.company-information.service.gov.uk/company/{}/officers",
             company_number
         );
-
-        let client = Client::new();
-
         let mut headers = header::HeaderMap::new();
         headers.insert(
             "Authorization",
             header::HeaderValue::from_str(&format!("{}", API_KEY.as_str()))?,
         );
 
-        let response = client.get(url).headers(headers).send().await.unwrap();
+        let response = self.client.get(url).headers(headers).send().await.unwrap();
 
         let officer_search_response: OfficerListResponse = response.json().await?;
         Ok(officer_search_response)
@@ -78,8 +74,6 @@ impl CompanyHouseClient {
         company_number: &String,
     ) -> Result<ShareholderList, failure::Error> {
         let url = format!("https://api.company-information.service.gov.uk/company/{}/persons-with-significant-control", company_number);
-        let client = Client::new();
-
         // TODO: could stop duplication and do this once somewhere
         let mut headers = header::HeaderMap::new();
         headers.insert(
@@ -87,7 +81,7 @@ impl CompanyHouseClient {
             header::HeaderValue::from_str(&format!("{}", API_KEY.as_str()))?,
         );
 
-        let response = client.get(url).headers(headers).send().await?;
+        let response = self.client.get(url).headers(headers).send().await?;
 
         let shareholder_list: ShareholderList = response.json().await?;
         Ok(shareholder_list)
@@ -101,8 +95,6 @@ impl CompanyHouseClient {
             Some(officer_id) => officer_id,
             None => return Err(format_err!("Officer id doesn't exist")),
         };
-
-        let client = Client::new();
         let url = format!(
             "https://api.company-information.service.gov.uk/officers/{}/appointments",
             officer_id
@@ -114,7 +106,7 @@ impl CompanyHouseClient {
             header::HeaderValue::from_str(&format!("{}", API_KEY.as_str()))?,
         );
 
-        let response = client.get(url).headers(headers).send().await?;
+        let response = self.client.get(url).headers(headers).send().await?;
         let appointments: AppointmentsResponse = response.json().await?;
         Ok(appointments)
     }
