@@ -70,15 +70,15 @@ impl RelationJob {
 
             let insert_relationship_result = match reverse_relation {
                 true => database.insert_relationship(Relationship {
-                    parent_id,
-                    child_id: self.child_id,
+                    parent_id: self.child_id,
+                    child_id: parent_id,
                     kind: relationship_kind,
                     started_on: entity_relation.started_on,
                     ended_on: entity_relation.ended_on,
                 }),
                 false => database.insert_relationship(Relationship {
-                    parent_id: self.child_id,
-                    child_id: parent_id,
+                    parent_id, 
+                    child_id: self.child_id,
                     kind: relationship_kind,
                     started_on: entity_relation.started_on,
                     ended_on: entity_relation.ended_on,
