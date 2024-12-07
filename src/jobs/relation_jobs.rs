@@ -2,7 +2,6 @@ use serde::{Deserialize, Serialize};
 use uuid::Uuid;
 
 use crate::company_house::company_house_apis::{get_appointments, get_officers, get_shareholders};
-// use crate::company_house_apis::{get_officers, get_shareholders};
 use crate::jobs::jobs::JobKind;
 use crate::models::{Entity, EntityRelation, Entitykind, Relationship, Relationshipkind};
 use crate::postgres::Database;
