@@ -68,13 +68,25 @@ impl RelationJob {
     ) -> Result<(), failure::Error> {
         for entity_relation in entity_relations {
             let parent_id = database.insert_entity(&entity_relation.entity, self.check_id)?;
-            match database.insert_relationship(Relationship {
-                parent_id,
-                child_id: self.child_id,
-                kind: relationship_kind,
-                started_on: entity_relation.started_on,
-                ended_on: entity_relation.ended_on,
-            }) {
+
+            let insert_relationship_result = match reverse_relation {
+                true => database.insert_relationship(Relationship {
+                    parent_id,
+                    child_id: self.child_id,
+                    kind: relationship_kind,
+                    started_on: entity_relation.started_on,
+                    ended_on: entity_relation.ended_on,
+                }),
+                false => database.insert_relationship(Relationship {
+                    parent_id: self.child_id,
+                    child_id: parent_id,
+                    kind: relationship_kind,
+                    started_on: entity_relation.started_on,
+                    ended_on: entity_relation.ended_on,
+                }),
+            };
+
+            match insert_relationship_result {
                 Ok(_) => {
                     self.queue_further_jobs(database, producer, &entity_relation.entity)
                         .await?
