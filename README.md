@@ -30,3 +30,7 @@ docker run -it \
 
 
 - echo DATABASE_URL=postgres://username:password@localhost/diesel_demo > .env
+
+
+## Commonly required commands
+- diesel migration generate --diff-schema name_of_migration
