@@ -1,7 +1,7 @@
 use serde::{Deserialize, Serialize};
 use uuid::Uuid;
 
-use crate::company_house::company_house_apis::{get_officers, get_shareholders};
+use crate::company_house::company_house_apis::{get_appointments, get_officers, get_shareholders};
 // use crate::company_house_apis::{get_officers, get_shareholders};
 use crate::jobs::jobs::JobKind;
 use crate::models::{Entity, EntityRelation, Entitykind, Relationship, Relationshipkind};
@@ -19,7 +19,7 @@ pub struct RelationJob {
     pub relation_job_kind: RelationJobKind,
 }
 
-#[derive(Serialize, Deserialize, Debug)]
+#[derive(Serialize, Deserialize, Debug, PartialEq)]
 pub enum RelationJobKind {
     Shareholders,
     Officers,
@@ -37,17 +37,25 @@ impl RelationJob {
                 get_shareholders(&self.company_house_number).await?.into()
             }
             RelationJobKind::Officers => get_officers(&self.company_house_number).await?.into(),
-            RelationJobKind::Appointments => vec![],
+            RelationJobKind::Appointments => {
+                get_appointments(&self.company_house_number).await?.into()
+            }
         };
 
         let relationship_kind = match self.relation_job_kind {
             RelationJobKind::Shareholders => Relationshipkind::Shareholder,
             RelationJobKind::Officers => Relationshipkind::Officer,
-            RelationJobKind::Appointments => unimplemented!(),
+            RelationJobKind::Appointments => Relationshipkind::Officer, // not sure if this will work?
         };
 
-        self.do_job(entities, relationship_kind, database, producer)
-            .await
+        self.do_job(
+            entities,
+            relationship_kind,
+            database,
+            producer,
+            self.relation_job_kind == RelationJobKind::Appointments,
+        )
+        .await
     }
 
     async fn do_job(
@@ -56,6 +64,7 @@ impl RelationJob {
         relationship_kind: Relationshipkind,
         database: &mut Database,
         producer: &mut PulsarProducer,
+        reverse_relation: bool,
     ) -> Result<(), failure::Error> {
         for entity_relation in entity_relations {
             let parent_id = database.insert_entity(&entity_relation.entity, self.check_id)?;

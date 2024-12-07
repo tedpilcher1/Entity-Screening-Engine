@@ -3,7 +3,7 @@ use reqwest::{self, header, Client};
 use std::{collections::HashMap, env};
 
 use super::company_house_response_types::{
-    AppointmentsResponse, CompanySearchResponse, OfficerListResponse, ShareholderList
+    AppointmentsResponse, CompanySearchResponse, OfficerListResponse, ShareholderList,
 };
 
 const COMPANY_SEARCH_URL: &str = "https://api.company-information.service.gov.uk/search/companies";
@@ -72,7 +72,9 @@ pub async fn get_shareholders(company_number: &String) -> Result<ShareholderList
     Ok(shareholder_list)
 }
 
-pub async fn get_appointments(company_house_number: &String) -> Result<AppointmentsResponse, failure::Error> {
+pub async fn get_appointments(
+    company_house_number: &String,
+) -> Result<AppointmentsResponse, failure::Error> {
     let client = Client::new();
     let url = format!(
         "https://api.company-information.service.gov.uk/officers/{}/appointments",

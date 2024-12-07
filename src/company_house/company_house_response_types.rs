@@ -241,7 +241,7 @@ pub struct AppointmentsResponse {
 pub struct AppointmentListItem {
     pub address: Option<Address>,
     pub appointed_before: Option<String>,
-    pub appointed_on: Option<String>,
+    pub appointed_on: Option<NaiveDate>,
     pub appointed_to: Option<AppointedTo>,
     pub contact_details: Option<ContactDetails>,
     pub country_of_residence: Option<String>,
@@ -255,7 +255,7 @@ pub struct AppointmentListItem {
     pub occupation: Option<String>,
     pub officer_role: Option<String>,
     pub principal_office_address: Option<Address>,
-    pub resigned_on: Option<String>,
+    pub resigned_on: Option<NaiveDate>,
     pub responsibilities: Option<String>,
 }
 

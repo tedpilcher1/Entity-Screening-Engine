@@ -10,10 +10,12 @@ use serde::{Deserialize, Serialize};
 use std::io::Write;
 use uuid::Uuid;
 
+use crate::company_house;
 use crate::company_house::company_house_response_types::{
-    CompanyItem, Identification, OfficerListItem, OfficerListResponse, ShareholderList,
-    ShareholderListItem,
+    AppointmentListItem, AppointmentsResponse, CompanyItem, Identification, OfficerListItem,
+    OfficerListResponse, ShareholderList, ShareholderListItem,
 };
+use crate::schema::entity;
 
 type CompanyHouseNumber = String;
 
@@ -153,7 +155,7 @@ impl From<OfficerListResponse> for Vec<EntityRelation> {
             match entity {
                 Ok(entity) => entity_relations.push(entity),
                 Err(_) => {
-                    warn!("Failed to convert to entity."); // todo improve log
+                    warn!("Failed to convert officer into an entity."); // todo improve log
                 }
             };
         }
@@ -169,8 +171,22 @@ impl From<ShareholderList> for Vec<EntityRelation> {
             match entity {
                 Ok(entity) => entity_relations.push(entity),
                 Err(_) => {
-                    warn!("Failed to convert to entity."); // todo improve log
+                    warn!("Failed to convert shareholder into an entity."); // todo improve log
                 }
+            }
+        }
+        entity_relations
+    }
+}
+
+impl From<AppointmentsResponse> for Vec<EntityRelation> {
+    fn from(appointments: AppointmentsResponse) -> Self {
+        let mut entity_relations: Vec<EntityRelation> = Vec::new();
+        for appointment in appointments.items.unwrap_or_default() {
+            let entity: Result<EntityRelation, ()> = appointment.try_into();
+            match entity {
+                Ok(entity) => entity_relations.push(entity),
+                Err(_) => warn!("Failed to convert appointment into an entity"),
             }
         }
         entity_relations
@@ -263,6 +279,40 @@ impl TryFrom<(OfficerListItem, bool)> for EntityRelation {
     }
 }
 
+impl TryFrom<AppointmentListItem> for EntityRelation {
+    type Error = ();
+
+    fn try_from(appointment: AppointmentListItem) -> Result<Self, Self::Error> {
+        let (company_house_number, name) = match appointment.appointed_to {
+            Some(appointed_to) => (appointed_to.company_number, appointed_to.company_name),
+            None => return Err(()),
+        };
+
+        let company_house_number = match company_house_number {
+            Some(number) => number,
+            None => return Err(()),
+        };
+
+        let entity = Entity {
+            id: Uuid::new_v4(),
+            company_house_number,
+            name,
+            kind: Entitykind::Company,
+            country: None,
+            postal_code: None,
+            date_of_origin: None,
+            is_root: false,
+        };
+
+        Ok(Self {
+            entity,
+            started_on: appointment.appointed_on,
+            ended_on: appointment.resigned_on,
+        })
+    }
+}
+
+// TODO
 impl TryFrom<CompanyItem> for Entity {
     type Error = ();
 
