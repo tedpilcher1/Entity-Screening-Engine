@@ -14,9 +14,7 @@ pub struct RelationJob {
     pub check_id: Uuid,
     pub company_house_number: String,
     pub officer_id: Option<String>,
-    pub remaining_shareholder_depth: usize,
-    pub remaining_officer_depth: usize,
-    pub remaining_appointment_depth: usize,
+    pub remaining_depth: usize,
     pub relation_job_kind: RelationJobKind,
 }
 
@@ -37,7 +35,7 @@ impl RelationJob {
             RelationJobKind::Shareholders => {
                 get_shareholders(&self.company_house_number).await?.into()
             }
-            RelationJobKind::Officers => get_officers(&self.company_house_number).await?.into(),            
+            RelationJobKind::Officers => get_officers(&self.company_house_number).await?.into(),
             RelationJobKind::Appointments => get_appointments(&self.officer_id).await?.into(),
         };
 
@@ -111,15 +109,13 @@ impl RelationJob {
     ) -> Result<(), failure::Error> {
         match entity.kind {
             Entitykind::Company => {
-                if self.remaining_officer_depth > 0 {
+                if self.remaining_depth > 0 {
                     let job_kind = JobKind::RelationJob(RelationJob {
                         child_id: entity.id,
                         check_id: self.check_id,
                         company_house_number: entity.company_house_number.clone(),
                         officer_id: entity.officer_id.clone(),
-                        remaining_shareholder_depth: self.remaining_shareholder_depth,
-                        remaining_officer_depth: self.remaining_officer_depth - 1,
-                        remaining_appointment_depth: self.remaining_appointment_depth,
+                        remaining_depth: self.remaining_depth - 1,
                         relation_job_kind: RelationJobKind::Shareholders,
                     });
 
@@ -127,15 +123,13 @@ impl RelationJob {
                         .enqueue_job(database, self.check_id, job_kind)
                         .await?;
                 }
-                if self.remaining_shareholder_depth > 0 {
+                if self.remaining_depth > 0 {
                     let job_kind = JobKind::RelationJob(RelationJob {
                         child_id: entity.id,
                         check_id: self.check_id,
                         company_house_number: entity.company_house_number.clone(),
                         officer_id: entity.officer_id.clone(),
-                        remaining_shareholder_depth: self.remaining_shareholder_depth - 1,
-                        remaining_officer_depth: self.remaining_officer_depth,
-                        remaining_appointment_depth: self.remaining_appointment_depth,
+                        remaining_depth: self.remaining_depth - 1,
                         relation_job_kind: RelationJobKind::Officers,
                     });
 
@@ -145,15 +139,13 @@ impl RelationJob {
                 }
             }
             Entitykind::Individual => {
-                if self.remaining_appointment_depth > 0 {
+                if self.remaining_depth > 0 {
                     let job_kind = JobKind::RelationJob(RelationJob {
                         child_id: entity.id,
                         check_id: self.check_id,
                         company_house_number: entity.company_house_number.clone(),
                         officer_id: entity.officer_id.clone(),
-                        remaining_shareholder_depth: self.remaining_shareholder_depth,
-                        remaining_officer_depth: self.remaining_officer_depth,
-                        remaining_appointment_depth: self.remaining_appointment_depth - 1,
+                        remaining_depth: self.remaining_depth - 1,
                         relation_job_kind: RelationJobKind::Appointments,
                     });
 

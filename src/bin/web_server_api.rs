@@ -17,8 +17,6 @@ use Company_Investigation::{
     pulsar::PulsarClient,
 };
 
-type OfficerDepth = usize;
-type ShareholderDepth = usize;
 const MAX_DEPTH: usize = 5;
 
 fn get_entity_response(check_id: Uuid) -> Result<EntityResponse, failure::Error> {
@@ -94,8 +92,7 @@ async fn get_relations_endpoint(params: web::Path<Uuid>) -> impl Responder {
 
 async fn start_relations_check(
     company_house_number: String,
-    officer_depth: OfficerDepth,
-    shareholder_depth: ShareholderDepth,
+    depth: usize,
 ) -> Result<Uuid, failure::Error> {
     let mut database = Database::connect()?;
     let pulsar_client = PulsarClient::new().await;
@@ -106,10 +103,9 @@ async fn start_relations_check(
     let entity_id =
         database.insert_entity(&Entity::create_root(company_house_number.clone()), check_id)?;
 
-    let validated_officer_depth = min(officer_depth, MAX_DEPTH);
-    let validated_shareholder_depth = min(shareholder_depth, MAX_DEPTH);
+    let validated_depth = min(depth, MAX_DEPTH);
 
-    if validated_officer_depth > 0 {
+    if validated_depth > 0 {
         producer
             .enqueue_job(
                 &mut database,
@@ -119,16 +115,12 @@ async fn start_relations_check(
                     check_id,
                     company_house_number: company_house_number.clone(),
                     officer_id: None,
-                    remaining_shareholder_depth: validated_shareholder_depth,
-                    remaining_officer_depth: validated_officer_depth,
-                    remaining_appointment_depth: 3, // TODO
+                    remaining_depth: validated_depth,
                     relation_job_kind: RelationJobKind::Officers,
                 }),
             )
             .await?;
-    }
 
-    if validated_shareholder_depth > 0 {
         producer
             .enqueue_job(
                 &mut database,
@@ -138,9 +130,7 @@ async fn start_relations_check(
                     check_id,
                     company_house_number,
                     officer_id: None,
-                    remaining_shareholder_depth: validated_shareholder_depth,
-                    remaining_officer_depth: validated_officer_depth,
-                    remaining_appointment_depth: 3, // TODO
+                    remaining_depth: validated_depth,
                     relation_job_kind: RelationJobKind::Officers,
                 }),
             )
@@ -152,8 +142,7 @@ async fn start_relations_check(
 
 #[derive(Deserialize)]
 struct StartRelationsCheckParams {
-    officer_depth: Option<usize>,
-    shareholder_depth: Option<usize>,
+    relations_depth: Option<usize>,
 }
 
 #[post("/start_relations_check/{company_house_number}")]
@@ -163,21 +152,12 @@ async fn start_relations_check_endpoint(
 ) -> impl Responder {
     let company_house_number = path.into_inner();
 
-    let (officer_depth, shareholder_depth) = match info {
-        Some(info) => (
-            info.officer_depth.unwrap_or_else(|| 0),
-            info.shareholder_depth.unwrap_or_else(|| 0),
-        ),
-        None => (0, 0),
+    let depth = match info {
+        Some(info) => (info.relations_depth.unwrap_or_else(|| 0),),
+        None => (0,),
     };
 
-    match start_relations_check(
-        company_house_number.clone(),
-        officer_depth,
-        shareholder_depth,
-    )
-    .await
-    {
+    match start_relations_check(company_house_number.clone(), depth.0).await {
         Ok(check_id) => HttpResponse::Ok().json(check_id),
         Err(e) => {
             warn!("Failed to get relations: {}", e);

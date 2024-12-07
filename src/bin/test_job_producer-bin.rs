@@ -37,9 +37,7 @@ async fn simulate_find_shareholders_endpoint() {
         check_id,
         company_house_number,
         officer_id: None,
-        remaining_shareholder_depth: 5,
-        remaining_officer_depth: 5,
-        remaining_appointment_depth: 5,
+        remaining_depth: 5,
         relation_job_kind: RelationJobKind::Officers,
     });
 

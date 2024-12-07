@@ -80,7 +80,7 @@ pub async fn get_appointments(
         Some(officer_id) => officer_id,
         None => return Err(format_err!("Officer id doesn't exist")),
     };
-    
+
     let client = Client::new();
     let url = format!(
         "https://api.company-information.service.gov.uk/officers/{}/appointments",
@@ -98,9 +98,8 @@ pub async fn get_appointments(
     Ok(appointments)
 }
 
-
 #[cfg(test)]
-mod tests{
+mod tests {
     use super::*;
     use dotenv::dotenv;
 
