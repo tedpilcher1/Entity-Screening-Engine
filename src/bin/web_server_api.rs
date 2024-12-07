@@ -109,7 +109,6 @@ async fn start_relations_check(
     let validated_officer_depth = min(officer_depth, MAX_DEPTH);
     let validated_shareholder_depth = min(shareholder_depth, MAX_DEPTH);
 
-    println!("{:?}", validated_officer_depth);
     if validated_officer_depth > 0 {
         producer
             .enqueue_job(

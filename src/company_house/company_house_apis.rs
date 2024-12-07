@@ -89,8 +89,5 @@ pub async fn get_appointments(
 
     let response = client.get(url).headers(headers).send().await?;
     let appointments: AppointmentsResponse = response.json().await?;
-
-    println!("{:?}", appointments);
-
     Ok(appointments)
 }
