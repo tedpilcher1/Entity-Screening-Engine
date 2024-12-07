@@ -1,3 +1,4 @@
+use log::warn;
 use serde::{Deserialize, Serialize};
 use uuid::Uuid;
 
@@ -12,6 +13,7 @@ pub struct RelationJob {
     pub child_id: Uuid,
     pub check_id: Uuid,
     pub company_house_number: String,
+    pub officer_id: Option<String>,
     pub remaining_shareholder_depth: usize,
     pub remaining_officer_depth: usize,
     pub remaining_appointment_depth: usize,
@@ -35,16 +37,14 @@ impl RelationJob {
             RelationJobKind::Shareholders => {
                 get_shareholders(&self.company_house_number).await?.into()
             }
-            RelationJobKind::Officers => get_officers(&self.company_house_number).await?.into(),
-            RelationJobKind::Appointments => {
-                get_appointments(&self.company_house_number).await?.into()
-            }
+            RelationJobKind::Officers => get_officers(&self.company_house_number).await?.into(),            
+            RelationJobKind::Appointments => get_appointments(&self.officer_id).await?.into(),
         };
 
         let relationship_kind = match self.relation_job_kind {
             RelationJobKind::Shareholders => Relationshipkind::Shareholder,
             RelationJobKind::Officers => Relationshipkind::Officer,
-            RelationJobKind::Appointments => Relationshipkind::Officer, // not sure if this will work?
+            RelationJobKind::Appointments => Relationshipkind::Officer,
         };
 
         self.do_job(
@@ -77,7 +77,7 @@ impl RelationJob {
                     ended_on: entity_relation.ended_on,
                 }),
                 false => database.insert_relationship(Relationship {
-                    parent_id, 
+                    parent_id,
                     child_id: self.child_id,
                     kind: relationship_kind,
                     started_on: entity_relation.started_on,
@@ -91,7 +91,7 @@ impl RelationJob {
                         .await?
                 }
                 // log error and continue
-                Err(e) => println!(
+                Err(e) => warn!(
                     "Inserting relation failed for {:?}, error: {:?}",
                     relationship_kind, e
                 ),
@@ -116,6 +116,7 @@ impl RelationJob {
                         child_id: entity.id,
                         check_id: self.check_id,
                         company_house_number: entity.company_house_number.clone(),
+                        officer_id: entity.officer_id.clone(),
                         remaining_shareholder_depth: self.remaining_shareholder_depth,
                         remaining_officer_depth: self.remaining_officer_depth - 1,
                         remaining_appointment_depth: self.remaining_appointment_depth,
@@ -131,6 +132,7 @@ impl RelationJob {
                         child_id: entity.id,
                         check_id: self.check_id,
                         company_house_number: entity.company_house_number.clone(),
+                        officer_id: entity.officer_id.clone(),
                         remaining_shareholder_depth: self.remaining_shareholder_depth - 1,
                         remaining_officer_depth: self.remaining_officer_depth,
                         remaining_appointment_depth: self.remaining_appointment_depth,
@@ -148,6 +150,7 @@ impl RelationJob {
                         child_id: entity.id,
                         check_id: self.check_id,
                         company_house_number: entity.company_house_number.clone(),
+                        officer_id: entity.officer_id.clone(),
                         remaining_shareholder_depth: self.remaining_shareholder_depth,
                         remaining_officer_depth: self.remaining_officer_depth,
                         remaining_appointment_depth: self.remaining_appointment_depth - 1,

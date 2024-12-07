@@ -44,6 +44,7 @@ diesel::table! {
         postal_code -> Nullable<Text>,
         date_of_origin -> Nullable<Text>,
         is_root -> Bool,
+        officer_id -> Nullable<Text>,
     }
 }
 

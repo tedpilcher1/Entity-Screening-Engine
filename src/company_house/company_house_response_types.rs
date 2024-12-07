@@ -225,7 +225,7 @@ pub struct ShareholderListLinks {
 
 #[derive(Debug, Serialize, Deserialize)]
 pub struct AppointmentsResponse {
-    pub date_of_birth: Option<DateOfBirth>,
+    pub date_of_birth: Option<SimpleDateOfBirth>,
     pub etag: Option<String>,
     pub is_corporate_officer: Option<bool>,
     pub items: Option<Vec<AppointmentListItem>>,
@@ -257,6 +257,12 @@ pub struct AppointmentListItem {
     pub principal_office_address: Option<Address>,
     pub resigned_on: Option<NaiveDate>,
     pub responsibilities: Option<String>,
+}
+
+#[derive(Debug, Serialize, Deserialize, Clone)]
+pub struct SimpleDateOfBirth {
+    pub month: Option<i32>,
+    pub year: Option<i32>,
 }
 
 #[derive(Debug, Serialize, Deserialize, Clone)]

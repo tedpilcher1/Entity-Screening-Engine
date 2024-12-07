@@ -1,3 +1,4 @@
+use failure::{format_err, Error};
 use lazy_static::lazy_static;
 use reqwest::{self, header, Client};
 use std::{collections::HashMap, env};
@@ -73,12 +74,17 @@ pub async fn get_shareholders(company_number: &String) -> Result<ShareholderList
 }
 
 pub async fn get_appointments(
-    company_house_number: &String,
+    officer_id: &Option<String>,
 ) -> Result<AppointmentsResponse, failure::Error> {
+    let officer_id = match officer_id {
+        Some(officer_id) => officer_id,
+        None => return Err(format_err!("Officer id doesn't exist")),
+    };
+    
     let client = Client::new();
     let url = format!(
         "https://api.company-information.service.gov.uk/officers/{}/appointments",
-        company_house_number
+        officer_id
     );
 
     let mut headers = header::HeaderMap::new();
@@ -90,4 +96,19 @@ pub async fn get_appointments(
     let response = client.get(url).headers(headers).send().await?;
     let appointments: AppointmentsResponse = response.json().await?;
     Ok(appointments)
+}
+
+
+#[cfg(test)]
+mod tests{
+    use super::*;
+    use dotenv::dotenv;
+
+    #[tokio::test]
+    async fn can_get_appointments() {
+        dotenv().ok();
+        let officer_id = "246qk5GYIymwRXPiiBMDBG7hRS8".to_string();
+        let appointments = get_appointments(&Some(officer_id)).await;
+        appointments.unwrap();
+    }
 }

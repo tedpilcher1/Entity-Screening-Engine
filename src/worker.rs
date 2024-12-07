@@ -57,12 +57,12 @@ impl Worker {
             match self.run_job(job).await {
                 // TODO: log + metrics
                 Ok(_) => {
-                    println!("Job completed successfully");
+                    // println!("Job completed successfully");
                     info!("Job completed successfully")
                 }
                 Err(e) => {
-                    println!("Job had and error");
-                    warn!("Job had and error, error: {:?}", e)
+                    // println!("Job had an error, {:?}", e);
+                    warn!("Job had an error, error: {:?}", e)
                 }
             }
 

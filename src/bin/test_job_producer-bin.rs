@@ -11,7 +11,7 @@ use Company_Investigation::{
 };
 
 async fn simulate_find_shareholders_endpoint() {
-    let company_house_number = "04366849".to_string();
+    let company_house_number = "03742215".to_string();
 
     let pulsar_client = PulsarClient::new().await;
     let mut producer = pulsar_client.create_producer().await;
@@ -36,6 +36,7 @@ async fn simulate_find_shareholders_endpoint() {
         child_id,
         check_id,
         company_house_number,
+        officer_id: None,
         remaining_shareholder_depth: 5,
         remaining_officer_depth: 5,
         remaining_appointment_depth: 5,

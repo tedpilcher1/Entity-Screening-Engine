@@ -118,9 +118,10 @@ async fn start_relations_check(
                     child_id: entity_id,
                     check_id,
                     company_house_number: company_house_number.clone(),
+                    officer_id: None,
                     remaining_shareholder_depth: validated_shareholder_depth,
                     remaining_officer_depth: validated_officer_depth,
-                    remaining_appointment_depth: 0, // TODO
+                    remaining_appointment_depth: 3, // TODO
                     relation_job_kind: RelationJobKind::Officers,
                 }),
             )
@@ -136,9 +137,10 @@ async fn start_relations_check(
                     child_id: entity_id,
                     check_id,
                     company_house_number,
+                    officer_id: None,
                     remaining_shareholder_depth: validated_shareholder_depth,
                     remaining_officer_depth: validated_officer_depth,
-                    remaining_appointment_depth: 0, // TODO
+                    remaining_appointment_depth: 3, // TODO
                     relation_job_kind: RelationJobKind::Officers,
                 }),
             )

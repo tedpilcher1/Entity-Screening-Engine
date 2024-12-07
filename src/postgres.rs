@@ -1,5 +1,4 @@
 use chrono::{NaiveDate, NaiveDateTime, Utc};
-use diesel::sql_types::Timestamp;
 use diesel::{insert_into, Connection, PgConnection};
 use diesel::{prelude::*, update};
 use uuid::Uuid;

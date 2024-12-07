@@ -90,18 +90,18 @@ impl From<Option<String>> for Entitykind {
 }
 
 fn match_number_to_kind(
-    person_number: Option<String>,
-    identification: Option<Identification>,
+    person_number: &Option<String>,
+    identification: &Option<Identification>,
 ) -> Option<(CompanyHouseNumber, Entitykind)> {
     match person_number {
-        Some(person_number) => return Some((person_number, Entitykind::Individual)),
+        Some(person_number) => return Some((person_number.clone(), Entitykind::Individual)),
         None => {}
     }
 
     match identification {
         Some(identification) => {
             // let company_house_number = format!("{:0>8}", identification.registration_number.unwrap_or_else(f));
-            let company_house_number = identification.registration_number;
+            let company_house_number = identification.registration_number.clone();
 
             match company_house_number {
                 Some(company_house_number) => {
@@ -119,6 +119,8 @@ fn match_number_to_kind(
 #[diesel(check_for_backend(diesel::pg::Pg))]
 pub struct Entity {
     pub id: Uuid,
+    // this will be either company_house_number or person_number
+    // TODO: rename to entity_number
     pub company_house_number: String,
     pub name: Option<String>,
     pub kind: Entitykind,
@@ -126,6 +128,7 @@ pub struct Entity {
     pub postal_code: Option<String>,
     pub date_of_origin: Option<String>,
     pub is_root: bool,
+    pub officer_id: Option<String>,
 }
 
 impl Entity {
@@ -209,7 +212,7 @@ impl TryFrom<(ShareholderListItem, bool)> for EntityRelation {
             None => return Err(()),
         };
 
-        let company_house_number = format!("{:0>8}", company_house_number);
+        // let company_house_number = format!("{:0>8}", company_house_number);
 
         let (country, postal_code) = match shareholder.address {
             Some(address) => (address.country, address.postal_code),
@@ -221,6 +224,7 @@ impl TryFrom<(ShareholderListItem, bool)> for EntityRelation {
         let entity = Entity {
             id: Uuid::new_v4(),
             company_house_number,
+            officer_id: None,
             name: shareholder.name,
             kind: shareholder.kind.into(),
             country: country,
@@ -237,6 +241,22 @@ impl TryFrom<(ShareholderListItem, bool)> for EntityRelation {
     }
 }
 
+fn extract_officer_id(officer_item: OfficerListItem) -> Result<String, ()> {
+    officer_item
+        .links
+        .as_ref()
+        .and_then(|links| links.officer.as_ref())
+        .and_then(|officer| officer.appointments.as_ref())
+        .and_then(|appointments| {
+            appointments
+                .split('/')
+                .filter(|s| !s.is_empty())
+                .nth(1)
+                .map(String::from)
+        })
+        .ok_or(())
+}
+
 impl TryFrom<(OfficerListItem, bool)> for EntityRelation {
     type Error = ();
 
@@ -246,22 +266,28 @@ impl TryFrom<(OfficerListItem, bool)> for EntityRelation {
 
         // TODO: need method to take indentification.eregistration_num
         let (company_house_number, entity_kind) =
-            match match_number_to_kind(officer.person_number, officer.identification) {
+            match match_number_to_kind(&officer.person_number, &officer.identification) {
                 Some((company_house_number, entity_kind)) => (company_house_number, entity_kind),
                 None => return Err(()),
             };
 
         let (country, postal_code) = match officer.address {
-            Some(address) => (address.country, address.postal_code),
+            Some(ref address) => (address.country.clone(), address.postal_code.clone()),
             None => (None, None),
         };
 
         let doi = Some("00/00/0000".to_string()); // TODO THIS PROPERLY
 
+        let name = officer.name.clone();
+        let started_on = officer.appointed_on.clone();
+        let ended_on = officer.resigned_on.clone();
+        let officer_id = extract_officer_id(officer);
+
         let entity = Entity {
             id: Uuid::new_v4(),
             company_house_number,
-            name: officer.name,
+            officer_id: officer_id.ok(),
+            name,
             kind: entity_kind,
             country: country,
             postal_code: postal_code,
@@ -271,8 +297,8 @@ impl TryFrom<(OfficerListItem, bool)> for EntityRelation {
 
         Ok(Self {
             entity,
-            started_on: officer.appointed_on,
-            ended_on: officer.resigned_on,
+            started_on,
+            ended_on,
         })
     }
 }
@@ -294,6 +320,7 @@ impl TryFrom<AppointmentListItem> for EntityRelation {
         let entity = Entity {
             id: Uuid::new_v4(),
             company_house_number,
+            officer_id: None,
             name,
             kind: Entitykind::Company,
             country: None,
