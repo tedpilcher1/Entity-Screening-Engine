@@ -10,7 +10,7 @@ use serde::{Deserialize, Serialize};
 use std::io::Write;
 use uuid::Uuid;
 
-use crate::company_house_response_types::{
+use crate::company_house::company_house_response_types::{
     CompanyItem, Identification, OfficerListItem, OfficerListResponse, ShareholderList,
     ShareholderListItem,
 };

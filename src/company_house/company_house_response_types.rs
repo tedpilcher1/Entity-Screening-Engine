@@ -222,3 +222,52 @@ pub struct ShareholderListLinks {
     persons_with_significant_control_list: Option<String>,
     self_: Option<String>,
 }
+
+#[derive(Debug, Serialize, Deserialize)]
+pub struct AppointmentsResponse {
+    pub date_of_birth: Option<DateOfBirth>,
+    pub etag: Option<String>,
+    pub is_corporate_officer: Option<bool>,
+    pub items: Option<Vec<AppointmentListItem>>,
+    pub items_per_page: Option<i32>,
+    pub kind: Option<String>,
+    pub links: Option<Links>,
+    pub name: Option<String>,
+    pub start_index: Option<i32>,
+    pub total_results: Option<i32>,
+}
+
+#[derive(Debug, Serialize, Deserialize)]
+pub struct AppointmentListItem {
+    pub address: Option<Address>,
+    pub appointed_before: Option<String>,
+    pub appointed_on: Option<String>,
+    pub appointed_to: Option<AppointedTo>,
+    pub contact_details: Option<ContactDetails>,
+    pub country_of_residence: Option<String>,
+    pub former_names: Option<Vec<FormerName>>,
+    pub identification: Option<Identification>,
+    pub is_pre_1992_appointment: Option<bool>,
+    pub links: Option<Links>,
+    pub name: Option<String>,
+    pub name_elements: Option<NameElements>,
+    pub nationality: Option<String>,
+    pub occupation: Option<String>,
+    pub officer_role: Option<String>,
+    pub principal_office_address: Option<Address>,
+    pub resigned_on: Option<String>,
+    pub responsibilities: Option<String>,
+}
+
+#[derive(Debug, Serialize, Deserialize, Clone)]
+pub struct AppointedTo {
+    pub company_name: Option<String>,
+    pub company_number: Option<String>,
+    pub company_status: Option<String>,
+}
+
+#[derive(Debug, Serialize, Deserialize, Clone)]
+pub struct FormerName {
+    pub forenames: Option<String>,
+    pub surname: Option<String>,
+}

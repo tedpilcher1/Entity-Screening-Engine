@@ -1,5 +1,4 @@
-pub mod company_house_apis;
-pub mod company_house_response_types;
+mod company_house;
 pub mod jobs;
 pub mod models;
 pub mod postgres;
