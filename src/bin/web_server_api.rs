@@ -174,6 +174,7 @@ fn get_checks() -> Result<ChecksResponse, failure::Error> {
     let mut database = Database::connect().expect("Should be able to connect to db");
     let checks = database.get_checks()?;
     let mut check_response_vec: Vec<CheckResponse> = Vec::new();
+    let mut has_error = false;
 
     for check in checks {
         let root_entity = database.get_root_entity(&check.id)?;
@@ -186,10 +187,15 @@ fn get_checks() -> Result<ChecksResponse, failure::Error> {
             flags: vec![],                 // TODO: update once flags implemented
         };
         check_response_vec.push(check_response);
+
+        if database.does_check_have_errored_job(&check.id)? {
+            has_error = true
+        }
     }
 
     Ok(ChecksResponse {
         checks: check_response_vec,
+        has_error,
     })
 }
 
@@ -217,6 +223,7 @@ struct CheckResponse {
 #[derive(Serialize, Deserialize)]
 struct ChecksResponse {
     checks: Vec<CheckResponse>,
+    has_error: bool,
 }
 
 #[actix_web::main]
