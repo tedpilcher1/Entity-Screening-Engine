@@ -12,7 +12,7 @@ use Company_Investigation::{
         jobs::JobKind,
         relation_jobs::{RelationJob, RelationJobKind},
     },
-    models::{Entity, Relationshipkind},
+    models::{Check, Entity, Relationshipkind},
     postgres::Database,
     pulsar::PulsarClient,
 };
@@ -169,6 +169,55 @@ async fn start_relations_check_endpoint(
     }
 }
 
+fn get_checks() -> Result<ChecksResponse, failure::Error> {
+    let mut database = Database::connect().expect("Should be able to connect to db");
+    let checks = database.get_checks()?;
+    let mut check_response_vec: Vec<CheckResponse> = Vec::new();
+
+    for check in checks {
+        let root_entity = database.get_root_entity(&check.id)?;
+        let check_response = CheckResponse {
+            entity_number: root_entity.company_house_number,
+            name: root_entity.name,
+            instructed_on: check.started_at,
+            completed_on: database.check_completed_at(check.id)?,
+            risk_level: "Low".to_string(), // TODO: update once risk implemented
+            flags: vec![],                 // TODO: update once flags implemented
+        };
+        check_response_vec.push(check_response);
+    }
+
+    Ok(ChecksResponse {
+        checks: check_response_vec,
+    })
+}
+
+#[get("/get_checks")]
+async fn get_check_endpoint() -> impl Responder {
+    match get_checks() {
+        Ok(check_response) => HttpResponse::Ok().json(check_response),
+        Err(e) => {
+            warn!("Failed to get checks: {}", e);
+            HttpResponse::InternalServerError().json(format!("Failed to get checks"))
+        }
+    }
+}
+
+#[derive(Serialize, Deserialize)]
+struct CheckResponse {
+    entity_number: String,
+    name: Option<String>,
+    instructed_on: NaiveDateTime,
+    completed_on: Option<NaiveDateTime>,
+    risk_level: String, // TODO: change when implemented
+    flags: Vec<String>, // TODO: change when implemented
+}
+
+#[derive(Serialize, Deserialize)]
+struct ChecksResponse {
+    checks: Vec<CheckResponse>,
+}
+
 #[actix_web::main]
 async fn main() -> std::io::Result<()> {
     dotenv().ok();
@@ -180,6 +229,7 @@ async fn main() -> std::io::Result<()> {
             // .app_data(web::Data::new(PulsarClient::new()))
             .service(start_relations_check_endpoint)
             .service(get_relations_endpoint)
+            .service(get_check_endpoint)
     })
     .bind("127.0.0.1:8080")?
     .run()

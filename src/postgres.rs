@@ -193,11 +193,18 @@ impl Database {
         Ok(latest_completion)
     }
 
-    pub fn get_checks(
-        &mut self,
-    ) -> Result<Vec<Check>, failure::Error> {
+    pub fn get_checks(&mut self) -> Result<Vec<Check>, failure::Error> {
         Ok(check::table
             .select(check::all_columns)
             .load::<Check>(&mut self.conn)?)
+    }
+
+    pub fn get_root_entity(&mut self, check_id: &Uuid) -> Result<Entity, failure::Error> {
+        Ok(entity::table
+            .inner_join(check_entity_map::table.on(check_entity_map::entity_id.eq(entity::id)))
+            .filter(check_entity_map::check_id.eq(check_id))
+            .filter(entity::is_root.eq(true))
+            .select(entity::all_columns)
+            .first::<Entity>(&mut self.conn)?)
     }
 }
