@@ -380,6 +380,7 @@ pub struct Job {
     pub id: Uuid,
     pub enqueued_at: NaiveDateTime,
     pub completed_at: Option<NaiveDateTime>,
+    pub has_error: bool,
 }
 
 #[derive(Queryable, Selectable, Insertable)]

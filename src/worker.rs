@@ -28,7 +28,7 @@ impl Worker {
     }
 
     pub async fn run_job(&mut self, job: Job) -> Result<(), failure::Error> {
-        match job.job_kind {
+        let job_result = match job.job_kind {
             JobKind::RelationJob(relation_job) => {
                 relation_job
                     .do_work(
@@ -36,10 +36,16 @@ impl Worker {
                         &mut self.producer,
                         &self.company_house_client,
                     )
-                    .await?
+                    .await
             }
         };
+
+        // record job as completed and then throw error
         self.database.complete_job(job.id)?;
+        if let Err(_) = job_result {
+            self.database.update_job_with_error(&job.id)?
+        }
+        job_result?;
         Ok(())
     }
 
@@ -69,6 +75,7 @@ impl Worker {
                 }
                 Err(e) => {
                     // println!("Job had an error, {:?}", e);
+
                     warn!("Job had an error, error: {:?}", e)
                 }
             }

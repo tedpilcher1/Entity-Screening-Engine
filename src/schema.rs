@@ -53,6 +53,7 @@ diesel::table! {
         id -> Uuid,
         enqueued_at -> Timestamp,
         completed_at -> Nullable<Timestamp>,
+        has_error -> Bool,
     }
 }
 

@@ -144,6 +144,7 @@ impl Database {
                     id,
                     enqueued_at: Utc::now().naive_utc(),
                     completed_at: None,
+                    has_error: false,
                 })
                 .execute(conn)?;
 
@@ -206,5 +207,14 @@ impl Database {
             .filter(entity::is_root.eq(true))
             .select(entity::all_columns)
             .first::<Entity>(&mut self.conn)?)
+    }
+
+    pub fn update_job_with_error(&mut self, job_id: &Uuid) -> Result<(), failure::Error> {
+        update(job::table)
+            .filter(job::id.eq(job_id))
+            .set(job::has_error.eq(true))
+            .execute(&mut self.conn)?;
+
+        Ok(())
     }
 }
