@@ -179,6 +179,7 @@ fn get_checks() -> Result<ChecksResponse, failure::Error> {
     for check in checks {
         let root_entity = database.get_root_entity(&check.id)?;
         let check_response = CheckResponse {
+            check_id: check.id,
             entity_number: root_entity.company_house_number,
             name: root_entity.name,
             instructed_on: check.started_at,
@@ -212,6 +213,7 @@ async fn get_check_endpoint() -> impl Responder {
 
 #[derive(Serialize, Deserialize)]
 struct CheckResponse {
+    check_id: Uuid,
     entity_number: String,
     name: Option<String>,
     instructed_on: NaiveDateTime,
