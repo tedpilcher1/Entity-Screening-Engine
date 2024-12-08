@@ -1,9 +1,10 @@
 use std::cmp::min;
 
+use actix_cors::Cors;
 use chrono::{NaiveDate, NaiveDateTime};
 use dotenv::dotenv;
 
-use actix_web::{get, post, web, App, HttpResponse, HttpServer, Responder};
+use actix_web::{get, http, post, web, App, HttpResponse, HttpServer, Responder};
 use log::warn;
 use serde::{Deserialize, Serialize};
 use uuid::Uuid;
@@ -224,7 +225,18 @@ async fn main() -> std::io::Result<()> {
     env_logger::init();
 
     HttpServer::new(|| {
+        let cors = Cors::default()
+            .allowed_origin("https://www.rust-lang.org")
+            .allowed_origin_fn(|origin, _req_head| {
+                origin.as_bytes().ends_with(b".rust-lang.org")
+            })
+            .allowed_methods(vec!["GET", "POST"])
+            .allowed_headers(vec![http::header::AUTHORIZATION, http::header::ACCEPT])
+            .allowed_header(http::header::CONTENT_TYPE)
+            .max_age(3600);
+        
         App::new()
+            .wrap(cors)
             // .app_data(web::Data::new(Database::connect()))
             // .app_data(web::Data::new(PulsarClient::new()))
             .service(start_relations_check_endpoint)
