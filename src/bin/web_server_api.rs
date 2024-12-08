@@ -4,7 +4,7 @@ use actix_cors::Cors;
 use chrono::{NaiveDate, NaiveDateTime};
 use dotenv::dotenv;
 
-use actix_web::{get, http, post, web, App, HttpResponse, HttpServer, Responder};
+use actix_web::{get, post, web, App, HttpResponse, HttpServer, Responder};
 use log::warn;
 use serde::{Deserialize, Serialize};
 use uuid::Uuid;
@@ -13,12 +13,12 @@ use Company_Investigation::{
         jobs::JobKind,
         relation_jobs::{RelationJob, RelationJobKind},
     },
-    models::{Check, Entity, Relationshipkind},
+    models::{Entity, Relationshipkind},
     postgres::Database,
     pulsar::PulsarClient,
 };
 
-const MAX_DEPTH: usize = 5;
+const MAX_DEPTH: usize = 3;
 
 fn get_entity_response(check_id: Uuid) -> Result<EntityResponse, failure::Error> {
     let mut database = Database::connect()?;

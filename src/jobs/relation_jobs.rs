@@ -115,6 +115,7 @@ impl RelationJob {
         producer: &mut PulsarProducer,
         entity: &Entity,
     ) -> Result<(), failure::Error> {
+        println!("{}", self.remaining_depth);
         match entity.kind {
             Entitykind::Company => {
                 if self.remaining_depth > 0 {

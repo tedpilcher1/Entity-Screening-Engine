@@ -11,7 +11,7 @@ use Company_Investigation::{
 };
 
 async fn simulate_find_shareholders_endpoint() {
-    let company_house_number = "03742215".to_string();
+    let company_house_number = "15462329".to_string();
 
     let pulsar_client = PulsarClient::new().await;
     let mut producer = pulsar_client.create_producer().await;
@@ -35,12 +35,26 @@ async fn simulate_find_shareholders_endpoint() {
     let job_kind = JobKind::RelationJob(RelationJob {
         child_id,
         check_id,
-        company_house_number,
+        company_house_number: company_house_number.clone(),
         officer_id: None,
-        remaining_depth: 5,
+        remaining_depth: 3,
         relation_job_kind: RelationJobKind::Officers,
     });
 
+    producer
+        .enqueue_job(&mut conn, check_id, job_kind)
+        .await
+        .unwrap();
+
+    let job_kind = JobKind::RelationJob(RelationJob {
+        child_id,
+        check_id,
+        company_house_number,
+        officer_id: None,
+        remaining_depth: 3,
+        relation_job_kind: RelationJobKind::Shareholders,
+    });
+    
     producer
         .enqueue_job(&mut conn, check_id, job_kind)
         .await
