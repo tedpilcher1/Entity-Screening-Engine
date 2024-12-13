@@ -44,7 +44,7 @@ impl PulsarClient {
         // TODO: This could be done via an env var which describes num of workers
         let rate_limiter = RateLimiter::direct(Quota::per_minute(
             NonZero::new(ENTITY_RELATION_PRODUCER_LIMIT_PER_MIN).expect("entity relation producer limit should be set"),
-        ));
+        ).allow_burst(NonZero::new(1).unwrap()));
 
         PulsarProducer {
             id,
@@ -114,7 +114,6 @@ impl PulsarProducer {
             info!("Check with ID: {:?} reached job limit", check_id);
             return Ok(())
         }
-
         self.rate_limiter.until_ready().await;
         let job_id = database.add_job(check_id)?;
         self.produce_message(Job {
