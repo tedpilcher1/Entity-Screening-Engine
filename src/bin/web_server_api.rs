@@ -235,7 +235,7 @@ async fn main() -> std::io::Result<()> {
 
     HttpServer::new(|| {
         let cors = Cors::default().allow_any_origin().send_wildcard();
-        
+
         App::new()
             .wrap(cors)
             // .app_data(web::Data::new(Database::connect()))

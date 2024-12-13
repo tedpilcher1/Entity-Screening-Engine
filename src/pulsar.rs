@@ -1,3 +1,11 @@
+use std::num::NonZero;
+
+use governor::{
+    clock::{QuantaClock, QuantaInstant},
+    middleware::NoOpMiddleware,
+    state::{InMemoryState, NotKeyed},
+    Quota, RateLimiter,
+};
 use pulsar::{producer, proto, Consumer, Producer, Pulsar, SubType, TokioExecutor};
 use uuid::Uuid;
 
@@ -8,9 +16,11 @@ use crate::{
 
 const PULSAR_ADDR: &str = "pulsar://localhost:6650";
 const TOPIC: &str = "non-persistent://public/default/testing";
+const ENTITY_RELATION_SERVICE_SUB: &str = "Entity-Relation-Sub";
+const ENTITY_RELATION_PRODUCER_LIMIT_PER_MIN: u32 = 120;
 
 pub struct PulsarClient {
-    pub internal_client: Pulsar<TokioExecutor>,
+    internal_client: Pulsar<TokioExecutor>,
 }
 
 impl PulsarClient {
@@ -25,6 +35,13 @@ impl PulsarClient {
 
     pub async fn create_producer(&self) -> PulsarProducer {
         let id = Uuid::new_v4();
+        
+        // TODO: This will limit each worker's producer to x per min, in reality we want all workers' producers
+        // to be limited to x per min, i.e each producer limited to x / n per min, where n is number of workers
+        let rate_limiter = RateLimiter::direct(Quota::per_minute(
+            NonZero::new(ENTITY_RELATION_PRODUCER_LIMIT_PER_MIN).unwrap(),
+        ));
+
         PulsarProducer {
             id,
             internal_producer: self
@@ -37,11 +54,13 @@ impl PulsarClient {
                         r#type: proto::schema::Type::String as i32, // Or appropriate type for Job
                         ..Default::default()
                     }),
+
                     ..Default::default()
                 })
                 .build()
                 .await
                 .expect("Should be able to create producer"),
+            rate_limiter,
         }
     }
 
@@ -54,9 +73,9 @@ impl PulsarClient {
                 .consumer()
                 .with_topic(TOPIC)
                 .with_consumer_name("CONSUMER_".to_owned() + &id.to_string())
-                .with_subscription_type(SubType::Exclusive) // exclusive for current testing
+                .with_subscription_type(SubType::Shared) // exclusive for current testing
                 // .with_subscription("SUB_".to_owned() + &id.to_string())
-                .with_subscription("test-sub")
+                .with_subscription(ENTITY_RELATION_SERVICE_SUB)
                 .build()
                 .await
                 .expect("Should be able to create consumer"),
@@ -65,8 +84,9 @@ impl PulsarClient {
 }
 
 pub struct PulsarProducer {
-    pub id: Uuid,
-    pub internal_producer: Producer<TokioExecutor>,
+    id: Uuid,
+    internal_producer: Producer<TokioExecutor>,
+    rate_limiter: RateLimiter<NotKeyed, InMemoryState, QuantaClock, NoOpMiddleware<QuantaInstant>>,
 }
 
 impl PulsarProducer {
@@ -82,6 +102,7 @@ impl PulsarProducer {
         job_kind: JobKind,
     ) -> Result<(), failure::Error> {
         let job_id = database.add_job(check_id)?;
+        self.rate_limiter.until_ready().await;
         self.produce_message(Job {
             id: job_id,
             job_kind,
@@ -92,6 +113,6 @@ impl PulsarProducer {
 }
 
 pub struct PulsarConsumer {
-    pub id: Uuid,
+    id: Uuid,
     pub internal_consumer: Consumer<Job, TokioExecutor>,
 }

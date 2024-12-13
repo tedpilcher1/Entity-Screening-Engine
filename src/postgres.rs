@@ -219,15 +219,15 @@ impl Database {
     }
 
     pub fn does_check_have_errored_job(&mut self, check_id: &Uuid) -> Result<bool, failure::Error> {
-
         let has_error = job::table
             .inner_join(check_job_map::table.on(check_job_map::job_id.eq(job::id)))
             .filter(check_job_map::check_id.eq(check_id))
             .select(job::has_error)
             .load::<bool>(&mut self.conn)?;
-        
-        Ok(has_error.into_iter().find(|x| *x == true).unwrap_or_else(|| false))
+
+        Ok(has_error
+            .into_iter()
+            .find(|x| *x == true)
+            .unwrap_or_else(|| false))
     }
-
-
 }

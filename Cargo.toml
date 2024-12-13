@@ -22,6 +22,7 @@ actix-web = "4.0"
 diesel = { version = "2.2.5", features = ["postgres", "uuid", "chrono"] }
 diesel-derive-enum = { version = "0.4.4", features = ["postgres"] }
 actix-cors = "0.7.0"
+governor = "0.8.0"
 
 
 [dependencies.uuid]

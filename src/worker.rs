@@ -67,16 +67,16 @@ impl Worker {
                 }
             };
 
+            let job_id = job.id;
             match self.run_job(job).await {
                 // TODO: log + metrics
                 Ok(_) => {
-                    // println!("Job completed successfully");
-                    info!("Job completed successfully")
+                    println!("Job completed successfully, id: {:?}", job_id);
+                    info!("Job completed successfully, id: {:?}", job_id)
                 }
                 Err(e) => {
-                    // println!("Job had an error, {:?}", e);
-
-                    warn!("Job had an error, error: {:?}", e)
+                    println!("Job had an error, id: {:?}, error:{:?}", job_id, e);
+                    warn!("Job had an error, id: {:?}, error: {:?}", job_id, e)
                 }
             }
 
