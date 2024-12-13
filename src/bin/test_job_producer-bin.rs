@@ -7,7 +7,7 @@ use Company_Investigation::{
     },
     models::Entity,
     postgres::Database,
-    pulsar::PulsarClient,
+    pulsar::PulsarClient, workers::entity_relation_worker::ENTITY_RELATION_TOPIC,
 };
 
 const DEPTH: usize = 2;
@@ -16,7 +16,7 @@ async fn simulate_find_shareholders_endpoint() {
     let company_house_number = "03742215".to_string();
 
     let pulsar_client = PulsarClient::new().await;
-    let mut producer = pulsar_client.create_producer().await;
+    let mut producer = pulsar_client.create_producer(ENTITY_RELATION_TOPIC, None, None).await;
 
     let company_house_number = format!("{:0>8}", company_house_number);
 

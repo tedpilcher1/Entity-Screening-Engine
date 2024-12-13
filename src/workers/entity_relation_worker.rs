@@ -8,6 +8,11 @@ use crate::{
     pulsar::{PulsarClient, PulsarConsumer, PulsarProducer},
 };
 
+pub const ENTITY_RELATION_TOPIC: &str = "non-persistent://public/default/entity-relation";
+const SUBSCRIPTION: &str = "Entity-Relation-Sub";
+const RATE_LIMIT_PER_MIN: u32 = 120;
+const MAX_JOB_PER_CHECK: usize = 2000;
+
 pub struct EntityRelationWorker {
     database: Database,
     producer: PulsarProducer,
@@ -21,8 +26,8 @@ impl EntityRelationWorker {
 
         Ok(Self {
             database: Database::connect()?,
-            producer: pulsar_client.create_producer().await,
-            consumer: pulsar_client.create_consumer().await,
+            producer: pulsar_client.create_producer(ENTITY_RELATION_TOPIC, Some(RATE_LIMIT_PER_MIN), Some(MAX_JOB_PER_CHECK)).await,
+            consumer: pulsar_client.create_consumer(ENTITY_RELATION_TOPIC, pulsar::SubType::Exclusive, SUBSCRIPTION).await,
             company_house_client: CompanyHouseClient::new(),
         })
     }
