@@ -7,7 +7,7 @@ use governor::{
     Quota, RateLimiter,
 };
 use log::info;
-use pulsar::{consumer::Message, producer, proto, Consumer, Producer, Pulsar, SubType, TokioExecutor};
+use pulsar::{consumer::{DeadLetterPolicy, Message}, producer, proto, Consumer, ConsumerOptions, Producer, Pulsar, SubType, TokioExecutor};
 use uuid::Uuid;
 
 use crate::{
@@ -20,6 +20,7 @@ const TOPIC: &str = "non-persistent://public/default/testing";
 const ENTITY_RELATION_SERVICE_SUB: &str = "Entity-Relation-Sub";
 const ENTITY_RELATION_PRODUCER_LIMIT_PER_MIN: u32 = 120;
 const MAX_JOB_PER_CHECK: usize = 2000;
+const MAX_JOB_RETRY: usize = 3;
 
 pub struct PulsarClient {
     internal_client: Pulsar<TokioExecutor>,
@@ -80,6 +81,10 @@ impl PulsarClient {
                 .with_subscription_type(SubType::Shared) // exclusive for current testing
                 // .with_subscription("SUB_".to_owned() + &id.to_string())
                 .with_subscription(ENTITY_RELATION_SERVICE_SUB)
+                .with_dead_letter_policy(DeadLetterPolicy {
+                    max_redeliver_count: MAX_JOB_RETRY,
+                    dead_letter_topic: format!("{}-DLQ", TOPIC),
+                })
                 .build()
                 .await
                 .expect("Should be able to create consumer"),

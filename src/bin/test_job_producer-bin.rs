@@ -10,7 +10,7 @@ use Company_Investigation::{
     pulsar::PulsarClient,
 };
 
-const DEPTH: usize = 3;
+const DEPTH: usize = 2;
 
 async fn simulate_find_shareholders_endpoint() {
     let company_house_number = "03742215".to_string();
