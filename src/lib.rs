@@ -4,4 +4,4 @@ pub mod models;
 pub mod postgres;
 pub mod pulsar;
 pub mod schema;
-pub mod worker;
+pub mod workers;

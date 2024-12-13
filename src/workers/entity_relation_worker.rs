@@ -8,14 +8,14 @@ use crate::{
     pulsar::{PulsarClient, PulsarConsumer, PulsarProducer},
 };
 
-pub struct Worker {
+pub struct EntityRelationWorker {
     database: Database,
     producer: PulsarProducer,
     consumer: PulsarConsumer,
     company_house_client: CompanyHouseClient,
 }
 
-impl Worker {
+impl EntityRelationWorker {
     pub async fn new() -> Result<Self, failure::Error> {
         let pulsar_client = PulsarClient::new().await;
 
