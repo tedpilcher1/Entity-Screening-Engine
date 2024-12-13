@@ -7,7 +7,7 @@ use governor::{
     Quota, RateLimiter,
 };
 use log::info;
-use pulsar::{producer, proto, Consumer, Producer, Pulsar, SubType, TokioExecutor};
+use pulsar::{consumer::Message, producer, proto, Consumer, Producer, Pulsar, SubType, TokioExecutor};
 use uuid::Uuid;
 
 use crate::{
@@ -128,4 +128,20 @@ impl PulsarProducer {
 pub struct PulsarConsumer {
     id: Uuid,
     pub internal_consumer: Consumer<Job, TokioExecutor>,
+}
+
+impl PulsarConsumer {
+    pub async fn ack(&mut self, msg: &Message<Job>) {
+        if let Err(_) = self.internal_consumer.ack(msg).await {
+            println!("Failed to ack message with id: {:?}", msg.message_id());
+            info!("Failed to ack message with id: {:?}", msg.message_id())
+        }
+    }
+
+    pub async fn nack(&mut self, msg: &Message<Job>) {
+        if let Err(_) = self.internal_consumer.nack(msg).await {
+            println!("Failed to nack message with id: {:?}", msg.message_id());
+            info!("Failed to nack message with id: {:?}", msg.message_id())
+        }
+    }
 }

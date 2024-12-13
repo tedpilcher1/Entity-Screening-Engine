@@ -71,10 +71,12 @@ impl Worker {
             match self.run_job(job).await {
                 // TODO: log + metrics
                 Ok(_) => {
+                    self.consumer.ack(&msg).await;
                     println!("Job completed successfully, id: {:?}", job_id);
                     info!("Job completed successfully, id: {:?}", job_id)
                 }
                 Err(e) => {
+                    self.consumer.nack(&msg).await;
                     println!("Job had an error, id: {:?}, error:{:?}", job_id, e);
                     warn!("Job had an error, id: {:?}, error: {:?}", job_id, e)
                 }
