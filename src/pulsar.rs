@@ -6,6 +6,7 @@ use governor::{
     state::{InMemoryState, NotKeyed},
     Quota, RateLimiter,
 };
+use log::info;
 use pulsar::{producer, proto, Consumer, Producer, Pulsar, SubType, TokioExecutor};
 use uuid::Uuid;
 
@@ -18,6 +19,7 @@ const PULSAR_ADDR: &str = "pulsar://localhost:6650";
 const TOPIC: &str = "non-persistent://public/default/testing";
 const ENTITY_RELATION_SERVICE_SUB: &str = "Entity-Relation-Sub";
 const ENTITY_RELATION_PRODUCER_LIMIT_PER_MIN: u32 = 120;
+const MAX_JOB_PER_CHECK: usize = 2000;
 
 pub struct PulsarClient {
     internal_client: Pulsar<TokioExecutor>,
@@ -38,8 +40,10 @@ impl PulsarClient {
         
         // TODO: This will limit each worker's producer to x per min, in reality we want all workers' producers
         // to be limited to x per min, i.e each producer limited to x / n per min, where n is number of workers
+
+        // TODO: This could be done via an env var which describes num of workers
         let rate_limiter = RateLimiter::direct(Quota::per_minute(
-            NonZero::new(ENTITY_RELATION_PRODUCER_LIMIT_PER_MIN).unwrap(),
+            NonZero::new(ENTITY_RELATION_PRODUCER_LIMIT_PER_MIN).expect("entity relation producer limit should be set"),
         ));
 
         PulsarProducer {
@@ -101,8 +105,18 @@ impl PulsarProducer {
         check_id: Uuid,
         job_kind: JobKind,
     ) -> Result<(), failure::Error> {
-        let job_id = database.add_job(check_id)?;
+
+        // if max jobs per check reached, gracefully terminate
+        // TODO: this is a bit inefficient was we are executing sql query each 
+        // time we enqueue rather than per job, but fine for now
+        if database.get_num_of_jobs(&check_id)? >= MAX_JOB_PER_CHECK {
+            println!("Check with ID: {:?} reached job limit", check_id);
+            info!("Check with ID: {:?} reached job limit", check_id);
+            return Ok(())
+        }
+
         self.rate_limiter.until_ready().await;
+        let job_id = database.add_job(check_id)?;
         self.produce_message(Job {
             id: job_id,
             job_kind,

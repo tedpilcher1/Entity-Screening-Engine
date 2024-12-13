@@ -230,4 +230,16 @@ impl Database {
             .find(|x| *x == true)
             .unwrap_or_else(|| false))
     }
+
+    // TODO: this could be refactored into just jobs which could then be filtered by other fns
+    pub fn get_num_of_jobs(&mut self, check_id: &Uuid) -> Result<usize, failure::Error> {
+        let num_jobs = job::table
+            .inner_join(check_job_map::table.on(check_job_map::job_id.eq(job::id)))
+            .filter(check_job_map::check_id.eq(check_id))
+            .select(job::id)
+            .count()
+            .first::<i64>(&mut self.conn)?;
+
+        Ok(num_jobs as usize)
+    }
 }
