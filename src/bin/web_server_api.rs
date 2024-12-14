@@ -15,7 +15,8 @@ use Company_Investigation::{
     },
     models::{Entity, Relationshipkind},
     postgres::Database,
-    pulsar::PulsarClient, workers::entity_relation_worker::ENTITY_RELATION_TOPIC,
+    pulsar::PulsarClient,
+    workers::entity_relation_worker::ENTITY_RELATION_TOPIC,
 };
 
 const MAX_DEPTH: usize = 3;
@@ -97,7 +98,9 @@ async fn start_relations_check(
 ) -> Result<Uuid, failure::Error> {
     let mut database = Database::connect()?;
     let pulsar_client = PulsarClient::new().await;
-    let mut producer = pulsar_client.create_producer(ENTITY_RELATION_TOPIC, None, None).await;
+    let mut producer = pulsar_client
+        .create_producer(ENTITY_RELATION_TOPIC, None, None)
+        .await;
     let company_house_number = format!("{:0>8}", company_house_number);
 
     let check_id = database.insert_check()?;

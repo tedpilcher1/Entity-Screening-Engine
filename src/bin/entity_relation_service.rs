@@ -5,6 +5,8 @@ use Company_Investigation::workers::entity_relation_worker::EntityRelationWorker
 async fn main() {
     dotenv().ok();
     env_logger::init();
-    let mut worker = EntityRelationWorker::new().await.unwrap();
+    let mut worker = EntityRelationWorker::new_worker()
+        .await
+        .expect("Should be able to create worker");
     worker.do_work().await;
 }

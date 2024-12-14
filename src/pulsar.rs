@@ -7,7 +7,10 @@ use governor::{
     Quota, RateLimiter,
 };
 use log::info;
-use pulsar::{consumer::{DeadLetterPolicy, Message}, producer, proto, Consumer, Producer, Pulsar, SubType, TokioExecutor};
+use pulsar::{
+    consumer::{DeadLetterPolicy, Message},
+    producer, proto, Consumer, Producer, Pulsar, SubType, TokioExecutor,
+};
 use uuid::Uuid;
 
 use crate::{
@@ -32,19 +35,28 @@ impl PulsarClient {
         }
     }
 
-    pub async fn create_producer(&self, topic: &str, rate_limit_per_min: Option<u32>, max_jobs_per_check: Option<usize>) -> PulsarProducer {
+    pub async fn create_producer(
+        &self,
+        topic: &str,
+        rate_limit_per_min: Option<u32>,
+        max_jobs_per_check: Option<usize>,
+    ) -> PulsarProducer {
         let id = Uuid::new_v4();
-        
+
         // TODO: This will limit each worker's producer to x per min, in reality we want all workers' producers
         // to be limited to x per min, i.e each producer limited to x / n per min, where n is number of workers
         // TODO: This could be done via an env var which describes num of workers
-        let rate_limiter= match rate_limit_per_min {
-            Some(rate_limit_per_min) => Some(RateLimiter::direct(Quota::per_minute(
-                NonZero::new(rate_limit_per_min).expect("entity relation producer limit should be set"),
-            ).allow_burst(NonZero::new(1).unwrap()))),
+        let rate_limiter = match rate_limit_per_min {
+            Some(rate_limit_per_min) => Some(RateLimiter::direct(
+                Quota::per_minute(
+                    NonZero::new(rate_limit_per_min)
+                        .expect("entity relation producer limit should be set"),
+                )
+                .allow_burst(NonZero::new(1).unwrap()),
+            )),
             None => None,
         };
-        
+
         PulsarProducer {
             id,
             internal_producer: self
@@ -68,7 +80,12 @@ impl PulsarClient {
         }
     }
 
-    pub async fn create_consumer(&self, topic: &str, subscription_type: SubType, subscription: &str) -> PulsarConsumer {
+    pub async fn create_consumer(
+        &self,
+        topic: &str,
+        subscription_type: SubType,
+        subscription: &str,
+    ) -> PulsarConsumer {
         let id = Uuid::new_v4();
         PulsarConsumer {
             id,
@@ -94,7 +111,8 @@ impl PulsarClient {
 pub struct PulsarProducer {
     id: Uuid,
     internal_producer: Producer<TokioExecutor>,
-    rate_limiter: Option<RateLimiter<NotKeyed, InMemoryState, QuantaClock, NoOpMiddleware<QuantaInstant>>>,
+    rate_limiter:
+        Option<RateLimiter<NotKeyed, InMemoryState, QuantaClock, NoOpMiddleware<QuantaInstant>>>,
     max_jobs_per_check: Option<usize>,
 }
 
@@ -110,22 +128,21 @@ impl PulsarProducer {
         check_id: Uuid,
         job_kind: JobKind,
     ) -> Result<(), failure::Error> {
-
         // if max jobs per check reached, gracefully terminate
-        // TODO: this is a bit inefficient was we are executing sql query each 
+        // TODO: this is a bit inefficient was we are executing sql query each
         // time we enqueue rather than per job, but fine for now
         if let Some(max_jobs) = self.max_jobs_per_check {
             if database.get_num_of_jobs(&check_id)? >= max_jobs {
                 println!("Check with ID: {:?} reached job limit", check_id);
                 info!("Check with ID: {:?} reached job limit", check_id);
-                return Ok(())
+                return Ok(());
             }
         }
-        
+
         if let Some(rate_limiter) = &self.rate_limiter {
             rate_limiter.until_ready().await;
         }
-        
+
         let job_id = database.add_job(check_id)?;
         self.produce_message(Job {
             id: job_id,
