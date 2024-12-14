@@ -7,7 +7,8 @@ use Company_Investigation::{
     },
     models::Entity,
     postgres::Database,
-    pulsar::PulsarClient, workers::entity_relation_worker::ENTITY_RELATION_TOPIC,
+    pulsar::PulsarClient,
+    workers::entity_relation_worker::ENTITY_RELATION_TOPIC,
 };
 
 const DEPTH: usize = 2;

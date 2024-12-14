@@ -10,7 +10,7 @@ use super::company_house_response_types::{
 const COMPANY_SEARCH_URL: &str = "https://api.company-information.service.gov.uk/search/companies";
 
 lazy_static! {
-    static ref API_KEY: String = env::var("API_KEY").expect("API KEY should be set");
+    static ref API_KEY: String = env::var("COMPANY_HOUSE_API_KEY").expect("API KEY should be set");
 }
 
 pub struct CompanyHouseClient {

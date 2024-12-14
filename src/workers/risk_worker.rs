@@ -12,17 +12,8 @@ pub struct RiskWorker {}
 
 impl RiskWorker {
     pub async fn new_worker() -> Result<Worker<RiskWorker>, failure::Error> {
-
-        let risk_worker = RiskWorker{};
-        Ok(Worker::new(
-            RISK_TOPIC,
-            SUBSCRIPTION,
-            None,
-            None,
-            SUB_TYPE,
-            risk_worker,
-        )
-        .await?)
+        let risk_worker = RiskWorker {};
+        Ok(Worker::new(RISK_TOPIC, SUBSCRIPTION, None, None, SUB_TYPE, risk_worker).await?)
     }
 }
 
