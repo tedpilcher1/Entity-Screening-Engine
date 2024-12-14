@@ -18,10 +18,10 @@ pub trait Work {
 }
 
 pub struct Worker<T: Work> {
-    database: Database,
-    producer: PulsarProducer,
-    consumer: PulsarConsumer,
-    internal_worker: T,
+    pub database: Database,
+    pub producer: PulsarProducer,
+    pub consumer: PulsarConsumer,
+    pub internal_worker: T,
 }
 
 impl<T: Work> Worker<T> {

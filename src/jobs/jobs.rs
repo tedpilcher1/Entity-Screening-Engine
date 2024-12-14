@@ -4,6 +4,8 @@ use uuid::Uuid;
 
 use crate::jobs::relation_jobs::RelationJob;
 
+use super::risk_jobs::RiskJob;
+
 #[derive(Serialize, Deserialize, Debug)]
 pub struct Job {
     pub id: Uuid,
@@ -31,4 +33,5 @@ impl DeserializeMessage for Job {
 #[derive(Serialize, Deserialize, Debug)]
 pub enum JobKind {
     RelationJob(RelationJob),
+    RiskJob(RiskJob),
 }
