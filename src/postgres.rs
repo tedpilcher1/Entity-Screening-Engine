@@ -329,10 +329,19 @@ impl Database {
         Ok(())
     }
 
-    pub fn get_flag_kinds(&mut self, entity_id: &Uuid) -> Result<Vec<Flagkind>, failure::Error> {
+    pub fn get_flag_kinds_for_entity(&mut self, entity_id: &Uuid) -> Result<Vec<Flagkind>, failure::Error> {
         Ok(flag::table
             .inner_join(flags::table.on(flags::flag_id.eq(flag::id)))
             .filter(flags::entity_id.eq(entity_id))
+            .select(flag::kind)
+            .load::<Flagkind>(&mut self.conn)?)
+    }
+
+    pub fn get_flag_kinds_for_check(&mut self, check_id: &Uuid) -> Result<Vec<Flagkind>, failure::Error> {
+        Ok(flag::table
+            .inner_join(flags::table.on(flags::flag_id.eq(flag::id)))
+            .inner_join(check_entity_map::table.on(check_entity_map::entity_id.eq(flags::entity_id)))
+            .filter(check_entity_map::check_id.eq(check_id))
             .select(flag::kind)
             .load::<Flagkind>(&mut self.conn)?)
     }
