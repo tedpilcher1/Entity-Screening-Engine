@@ -44,7 +44,7 @@ impl FromSql<crate::schema::sql_types::Relationshipkind, Pg> for Relationshipkin
     }
 }
 
-#[derive(Debug, AsExpression, FromSqlRow, Default, Serialize, Deserialize)]
+#[derive(Debug, AsExpression, FromSqlRow, Default, Serialize, Deserialize, PartialEq)]
 #[diesel(sql_type = crate::schema::sql_types::Entitykind)]
 pub enum Entitykind {
     #[default]
@@ -389,4 +389,348 @@ pub struct Job {
 pub struct CheckJobMap {
     pub check_id: Uuid,
     pub job_id: Uuid,
+}
+
+#[derive(Debug, AsExpression, FromSqlRow, Default, Serialize, Deserialize, PartialEq)]
+#[diesel(sql_type = crate::schema::sql_types::Flagkind)]
+pub enum Flagkind {
+    #[default]
+    Crime,
+    Fraud,
+    Cybercrime,
+    FinancialCrime,
+    EnvironmentViolations,
+    Theft,
+    WarCrimes,
+    CriminalLeaderShip,
+    Terrorism,
+    Trafficking,
+    DrugTrafficking,
+    HumanTrafficking,
+    Wanted,
+    Offshore,
+    ShellCompany,
+    PublicListedCompany,
+    Disqualified,
+    Government,
+    NationalGovernment,
+    StateGovernment,
+    MunicipalGovernment,
+    StateOwnedEnterprise,
+    IntergovernmentalOrg,
+    HeadOfGovernment,
+    CivilService,
+    ExecutiveBranchOfGovernment,
+    LegislativeBranchOfGovernment,
+    JudicialBranchOfGovernment,
+    SecurityServices,
+    CentralBankingAndFinIntegrity,
+    FinancialServices,
+    Bank,
+    Fund,
+    FinancialAdvisor,
+    RegulatorAction,
+    RegulatorWarning,
+    Politician,
+    NonPep,
+    CloseAsociate,
+    Judge,
+    CivilServant,
+    Diplomat,
+    Lawyer,
+    Accountant,
+    Spy,
+    Oligarch,
+    Journalist,
+    Activist,
+    Lobbyist,
+    PoliticalParty,
+    Union,
+    Religion,
+    Military,
+    FrozenAsset,
+    SanctionedEntity,
+    SanctionLinkedEntity,
+    CounterSanctionedEntity,
+    ExportControlled,
+    TradeRisk,
+    DEbarredEntity,
+    PersonOfInterest,
+}
+
+impl ToSql<crate::schema::sql_types::Flagkind, Pg> for Flagkind {
+    fn to_sql<'b>(&'b self, out: &mut Output<'b, '_, Pg>) -> serialize::Result {
+        match *self {
+            Flagkind::Crime => out.write_all(b"crime")?,
+            Flagkind::Fraud => out.write_all(b"fraud")?,
+            Flagkind::Cybercrime => out.write_all(b"cybercrime")?,
+            Flagkind::FinancialCrime => out.write_all(b"financial_crime")?,
+            Flagkind::EnvironmentViolations => out.write_all(b"environment_violations")?,
+            Flagkind::Theft => out.write_all(b"theft")?,
+            Flagkind::WarCrimes => out.write_all(b"war_crimes")?,
+            Flagkind::CriminalLeaderShip => out.write_all(b"criminal_leadership")?,
+            Flagkind::Terrorism => out.write_all(b"terrorism")?,
+            Flagkind::Trafficking => out.write_all(b"trafficking")?,
+            Flagkind::DrugTrafficking => out.write_all(b"drug_trafficking")?,
+            Flagkind::HumanTrafficking => out.write_all(b"human_trafficking")?,
+            Flagkind::Wanted => out.write_all(b"wanted")?,
+            Flagkind::Offshore => out.write_all(b"offshore")?,
+            Flagkind::ShellCompany => out.write_all(b"shell_company")?,
+            Flagkind::PublicListedCompany => out.write_all(b"public_listed_company")?,
+            Flagkind::Disqualified => out.write_all(b"disqualified")?,
+            Flagkind::Government => out.write_all(b"government")?,
+            Flagkind::NationalGovernment => out.write_all(b"national_government")?,
+            Flagkind::StateGovernment => out.write_all(b"state_government")?,
+            Flagkind::MunicipalGovernment => out.write_all(b"municipal_government")?,
+            Flagkind::StateOwnedEnterprise => out.write_all(b"state_owned_enterprise")?,
+            Flagkind::IntergovernmentalOrg => out.write_all(b"intergovernmental_org")?,
+            Flagkind::HeadOfGovernment => out.write_all(b"head_of_government")?,
+            Flagkind::CivilService => out.write_all(b"civil_service")?,
+            Flagkind::ExecutiveBranchOfGovernment => {
+                out.write_all(b"executive_branch_of_government")?
+            }
+            Flagkind::LegislativeBranchOfGovernment => {
+                out.write_all(b"legislative_branch_of_government")?
+            }
+            Flagkind::JudicialBranchOfGovernment => {
+                out.write_all(b"judicial_branch_of_government")?
+            }
+            Flagkind::SecurityServices => out.write_all(b"security_services")?,
+            Flagkind::CentralBankingAndFinIntegrity => {
+                out.write_all(b"central_banking_and_fin_integrity")?
+            }
+            Flagkind::FinancialServices => out.write_all(b"financial_services")?,
+            Flagkind::Bank => out.write_all(b"bank")?,
+            Flagkind::Fund => out.write_all(b"fund")?,
+            Flagkind::FinancialAdvisor => out.write_all(b"financial_advisor")?,
+            Flagkind::RegulatorAction => out.write_all(b"regulator_action")?,
+            Flagkind::RegulatorWarning => out.write_all(b"regulator_warning")?,
+            Flagkind::Politician => out.write_all(b"politician")?,
+            Flagkind::NonPep => out.write_all(b"non_pep")?,
+            Flagkind::CloseAsociate => out.write_all(b"close_associate")?,
+            Flagkind::Judge => out.write_all(b"judge")?,
+            Flagkind::CivilServant => out.write_all(b"civil_servant")?,
+            Flagkind::Diplomat => out.write_all(b"diplomat")?, // Fixed typo
+            Flagkind::Lawyer => out.write_all(b"lawyer")?,
+            Flagkind::Accountant => out.write_all(b"accountant")?,
+            Flagkind::Spy => out.write_all(b"spy")?,
+            Flagkind::Oligarch => out.write_all(b"oligarch")?,
+            Flagkind::Journalist => out.write_all(b"journalist")?,
+            Flagkind::Activist => out.write_all(b"activist")?,
+            Flagkind::Lobbyist => out.write_all(b"lobbyist")?,
+            Flagkind::PoliticalParty => out.write_all(b"political_party")?,
+            Flagkind::Union => out.write_all(b"union")?,
+            Flagkind::Religion => out.write_all(b"religion")?,
+            Flagkind::Military => out.write_all(b"military")?,
+            Flagkind::FrozenAsset => out.write_all(b"frozen_asset")?,
+            Flagkind::SanctionedEntity => out.write_all(b"sanctioned_entity")?,
+            Flagkind::SanctionLinkedEntity => out.write_all(b"sanction_linked_entity")?,
+            Flagkind::CounterSanctionedEntity => out.write_all(b"counter_sanctioned_entity")?,
+            Flagkind::ExportControlled => out.write_all(b"export_controlled")?,
+            Flagkind::TradeRisk => out.write_all(b"trade_risk")?,
+            Flagkind::DEbarredEntity => out.write_all(b"debarred_entity")?,
+            Flagkind::PersonOfInterest => out.write_all(b"person_of_interest")?,
+        }
+        Ok(IsNull::No)
+    }
+}
+
+impl FromSql<crate::schema::sql_types::Flagkind, Pg> for Flagkind {
+    fn from_sql(bytes: PgValue) -> deserialize::Result<Self> {
+        match bytes.as_bytes() {
+            b"crime" => Ok(Flagkind::Crime),
+            b"fraud" => Ok(Flagkind::Fraud),
+            b"cybercrime" => Ok(Flagkind::Cybercrime),
+            b"financial_crime" => Ok(Flagkind::FinancialCrime),
+            b"environment_violations" => Ok(Flagkind::EnvironmentViolations),
+            b"theft" => Ok(Flagkind::Theft),
+            b"war_crimes" => Ok(Flagkind::WarCrimes),
+            b"criminal_leadership" => Ok(Flagkind::CriminalLeaderShip),
+            b"terrorism" => Ok(Flagkind::Terrorism),
+            b"trafficking" => Ok(Flagkind::Trafficking),
+            b"drug_trafficking" => Ok(Flagkind::DrugTrafficking),
+            b"human_trafficking" => Ok(Flagkind::HumanTrafficking),
+            b"wanted" => Ok(Flagkind::Wanted),
+            b"offshore" => Ok(Flagkind::Offshore),
+            b"shell_company" => Ok(Flagkind::ShellCompany),
+            b"public_listed_company" => Ok(Flagkind::PublicListedCompany),
+            b"disqualified" => Ok(Flagkind::Disqualified),
+            b"government" => Ok(Flagkind::Government),
+            b"national_government" => Ok(Flagkind::NationalGovernment),
+            b"state_government" => Ok(Flagkind::StateGovernment),
+            b"municipal_government" => Ok(Flagkind::MunicipalGovernment),
+            b"state_owned_enterprise" => Ok(Flagkind::StateOwnedEnterprise),
+            b"intergovernmental_org" => Ok(Flagkind::IntergovernmentalOrg),
+            b"head_of_government" => Ok(Flagkind::HeadOfGovernment),
+            b"civil_service" => Ok(Flagkind::CivilService),
+            b"executive_branch_of_government" => Ok(Flagkind::ExecutiveBranchOfGovernment),
+            b"legislative_branch_of_government" => Ok(Flagkind::LegislativeBranchOfGovernment),
+            b"judicial_branch_of_government" => Ok(Flagkind::JudicialBranchOfGovernment),
+            b"security_services" => Ok(Flagkind::SecurityServices),
+            b"central_banking_and_fin_integrity" => Ok(Flagkind::CentralBankingAndFinIntegrity),
+            b"financial_services" => Ok(Flagkind::FinancialServices),
+            b"bank" => Ok(Flagkind::Bank),
+            b"fund" => Ok(Flagkind::Fund),
+            b"financial_advisor" => Ok(Flagkind::FinancialAdvisor),
+            b"regulator_action" => Ok(Flagkind::RegulatorAction),
+            b"regulator_warning" => Ok(Flagkind::RegulatorWarning),
+            b"politician" => Ok(Flagkind::Politician),
+            b"non_pep" => Ok(Flagkind::NonPep),
+            b"close_associate" => Ok(Flagkind::CloseAsociate),
+            b"judge" => Ok(Flagkind::Judge),
+            b"civil_servant" => Ok(Flagkind::CivilServant),
+            b"diplomat" => Ok(Flagkind::Diplomat),
+            b"lawyer" => Ok(Flagkind::Lawyer),
+            b"accountant" => Ok(Flagkind::Accountant),
+            b"spy" => Ok(Flagkind::Spy),
+            b"oligarch" => Ok(Flagkind::Oligarch),
+            b"journalist" => Ok(Flagkind::Journalist),
+            b"activist" => Ok(Flagkind::Activist),
+            b"lobbyist" => Ok(Flagkind::Lobbyist),
+            b"political_party" => Ok(Flagkind::PoliticalParty),
+            b"union" => Ok(Flagkind::Union),
+            b"religion" => Ok(Flagkind::Religion),
+            b"military" => Ok(Flagkind::Military),
+            b"frozen_asset" => Ok(Flagkind::FrozenAsset),
+            b"sanctioned_entity" => Ok(Flagkind::SanctionedEntity),
+            b"sanction_linked_entity" => Ok(Flagkind::SanctionLinkedEntity),
+            b"counter_sanctioned_entity" => Ok(Flagkind::CounterSanctionedEntity),
+            b"export_controlled" => Ok(Flagkind::ExportControlled),
+            b"trade_risk" => Ok(Flagkind::TradeRisk),
+            b"debarred_entity" => Ok(Flagkind::DEbarredEntity),
+            b"person_of_interest" => Ok(Flagkind::PersonOfInterest),
+
+            _ => Err("Unrecognized enum variant".into()),
+        }
+    }
+}
+
+impl TryFrom<&str> for Flagkind {
+    type Error = ();
+
+    fn try_from(value: &str) -> Result<Self, Self::Error> {
+        match value {
+            "crime" => Ok(Flagkind::Crime),
+            "crime.fraud" => Ok(Flagkind::Fraud),
+            "crime.cyber" => Ok(Flagkind::Cybercrime),
+            "crime.fin" => Ok(Flagkind::FinancialCrime),
+            "crime.env" => Ok(Flagkind::EnvironmentViolations),
+            "crime.theft" => Ok(Flagkind::Theft),
+            "crime.war" => Ok(Flagkind::WarCrimes),
+            "crime.boss" => Ok(Flagkind::CriminalLeaderShip),
+            "crime.terror" => Ok(Flagkind::Terrorism),
+            "crime.traffick" => Ok(Flagkind::Trafficking),
+            "crime.traffick.drug" => Ok(Flagkind::DrugTrafficking),
+            "crime.traffick.human" => Ok(Flagkind::HumanTrafficking),
+            "wanted" => Ok(Flagkind::Wanted),
+            "corp.offshore" => Ok(Flagkind::Offshore),
+            "corp.shell" => Ok(Flagkind::ShellCompany),
+            "corp.public" => Ok(Flagkind::PublicListedCompany),
+            "corp.disqual" => Ok(Flagkind::Disqualified),
+            "gov" => Ok(Flagkind::Government),
+            "gov.national" => Ok(Flagkind::NationalGovernment),
+            "gov.state" => Ok(Flagkind::StateGovernment),
+            "gov.muni" => Ok(Flagkind::MunicipalGovernment),
+            "gov.soe" => Ok(Flagkind::StateOwnedEnterprise),
+            "gov.igo" => Ok(Flagkind::IntergovernmentalOrg),
+            "gov.head" => Ok(Flagkind::HeadOfGovernment),
+            "gov.admin" => Ok(Flagkind::CivilService),
+            "gov.executive" => Ok(Flagkind::ExecutiveBranchOfGovernment),
+            "gov.legislative" => Ok(Flagkind::LegislativeBranchOfGovernment),
+            "gov.judicial" => Ok(Flagkind::JudicialBranchOfGovernment),
+            "gov.security" => Ok(Flagkind::SecurityServices),
+            "gov.financial" => Ok(Flagkind::CentralBankingAndFinIntegrity),
+            "fin" => Ok(Flagkind::FinancialServices),
+            "fin.bank" => Ok(Flagkind::Bank),
+            "fin.fund" => Ok(Flagkind::Fund),
+            "fin.adivsor" => Ok(Flagkind::FinancialAdvisor),
+            "reg.action" => Ok(Flagkind::RegulatorAction),
+            "reg.warn" => Ok(Flagkind::RegulatorWarning),
+            "role.pep" => Ok(Flagkind::Politician),
+            "role.pol" => Ok(Flagkind::NonPep),
+            "role.rca" => Ok(Flagkind::CloseAsociate),
+            "role.judge" => Ok(Flagkind::Judge),
+            "role.civil" => Ok(Flagkind::CivilServant),
+            "role.diplo" => Ok(Flagkind::Diplomat),
+            "role.lawyer" => Ok(Flagkind::Lawyer),
+            "role.acct" => Ok(Flagkind::Accountant),
+            "role.spy" => Ok(Flagkind::Spy),
+            "role.oligarch" => Ok(Flagkind::Oligarch),
+            "role.journo" => Ok(Flagkind::Journalist),
+            "role.act" => Ok(Flagkind::Activist),
+            "role.lobby" => Ok(Flagkind::Lobbyist),
+            "pol.party" => Ok(Flagkind::PoliticalParty),
+            "pol.union" => Ok(Flagkind::Union),
+            "rel" => Ok(Flagkind::Religion),
+            "mil" => Ok(Flagkind::Military),
+            "asset.frozen" => Ok(Flagkind::FrozenAsset),
+            "sanction" => Ok(Flagkind::SanctionedEntity),
+            "sanction.linked" => Ok(Flagkind::SanctionLinkedEntity),
+            "sanction.counter" => Ok(Flagkind::CounterSanctionedEntity),
+            "export.control" => Ok(Flagkind::ExportControlled),
+            "export.risk" => Ok(Flagkind::TradeRisk),
+            "debarment" => Ok(Flagkind::DEbarredEntity),
+            "poi" => Ok(Flagkind::PersonOfInterest),
+            _ => Err(()),
+        }
+    }
+}
+
+pub struct FlagStringList(pub Vec<String>);
+
+impl From<FlagStringList> for Vec<Flagkind> {
+    fn from(list: FlagStringList) -> Self {
+        list.0
+            .into_iter()
+            .filter_map(|value| (*value).try_into().ok())
+            .collect()
+    }
+}
+
+#[derive(Queryable, Selectable, Insertable)]
+#[diesel(table_name = crate::schema::flag)]
+#[diesel(check_for_backend(diesel::pg::Pg))]
+pub struct Flag {
+    pub id: Uuid,
+    pub kind: Flagkind,
+}
+
+#[derive(Queryable, Selectable, Insertable)]
+#[diesel(table_name = crate::schema::flags)]
+#[diesel(check_for_backend(diesel::pg::Pg))]
+pub struct Flags {
+    pub entity_id: Uuid,
+    pub flag_id: Uuid,
+}
+
+#[derive(Queryable, Selectable, Insertable)]
+#[diesel(table_name = crate::schema::dataset)]
+#[diesel(check_for_backend(diesel::pg::Pg))]
+pub struct Dataset {
+    pub id: Uuid,
+    pub name: String,
+}
+
+#[derive(Queryable, Selectable, Insertable)]
+#[diesel(table_name = crate::schema::datasets)]
+#[diesel(check_for_backend(diesel::pg::Pg))]
+pub struct Datasets {
+    pub entity_id: Uuid,
+    pub dataset_id: Uuid,
+}
+
+#[derive(Queryable, Selectable, Insertable)]
+#[diesel(table_name = crate::schema::position)]
+#[diesel(check_for_backend(diesel::pg::Pg))]
+pub struct Position {
+    pub id: Uuid,
+    pub title: String,
+}
+
+#[derive(Queryable, Selectable, Insertable)]
+#[diesel(table_name = crate::schema::positions)]
+#[diesel(check_for_backend(diesel::pg::Pg))]
+pub struct Positions {
+    pub entity_id: Uuid,
+    pub position_id: Uuid,
 }
