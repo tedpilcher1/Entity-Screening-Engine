@@ -4,22 +4,17 @@ use pulsar::SubType;
 
 use crate::{
     jobs::jobs::Job,
-    postgres::Database,
-    pulsar::{PulsarClient, PulsarConsumer, PulsarProducer},
+    pulsar::{PulsarClient, PulsarConsumer},
 };
 
 pub trait Work {
-    fn run_job(
+    fn work(
         &mut self,
         job: Job,
-        database: &mut Database,
-        producer: &mut PulsarProducer,
     ) -> impl std::future::Future<Output = Result<(), failure::Error>> + Send;
 }
 
 pub struct Worker<T: Work> {
-    pub database: Database,
-    pub producer: PulsarProducer,
     pub consumer: PulsarConsumer,
     pub internal_worker: T,
 }
@@ -28,18 +23,12 @@ impl<T: Work> Worker<T> {
     pub async fn new(
         topic: &str,
         sub: &str,
-        rate_limit_per_min: Option<u32>,
-        max_jobs_per_check: Option<usize>,
         sub_type: SubType,
         internal_worker: T,
     ) -> Result<Self, failure::Error> {
         let pulsar_client = PulsarClient::new().await;
 
         Ok(Self {
-            database: Database::connect()?,
-            producer: pulsar_client
-                .create_producer(topic, rate_limit_per_min, max_jobs_per_check)
-                .await,
             consumer: pulsar_client.create_consumer(topic, sub_type, sub).await,
             internal_worker,
         })
@@ -64,11 +53,7 @@ impl<T: Work> Worker<T> {
             };
 
             let job_id = job.id;
-            match self
-                .internal_worker
-                .run_job(job, &mut self.database, &mut self.producer)
-                .await
-            {
+            match self.internal_worker.work(job).await {
                 Ok(_) => {
                     self.consumer.ack(&msg).await;
                     println!("Job completed successfully, id: {:?}", job_id);
