@@ -4,9 +4,13 @@ use diesel::{prelude::*, update};
 use uuid::Uuid;
 
 use crate::models::{
-    Check, CheckEntityMap, CheckJobMap, Entity, Job, Relationship, Relationshipkind,
+    Check, CheckEntityMap, CheckJobMap, Dataset, Datasets, Entity, Flag, Flagkind, Flags, Job,
+    Position, Positions, Relationship, Relationshipkind,
 };
-use crate::schema::{check, check_entity_map, check_job_map, entity, job, relationship};
+use crate::schema::{
+    check, check_entity_map, check_job_map, dataset, datasets, entity, flag, flags, job, position,
+    positions, relationship,
+};
 
 pub struct Database {
     conn: PgConnection,
@@ -241,5 +245,87 @@ impl Database {
             .first::<i64>(&mut self.conn)?;
 
         Ok(num_jobs as usize)
+    }
+
+    pub fn insert_positions(
+        &mut self,
+        entity_id: Uuid,
+        titles: Vec<String>,
+    ) -> Result<(), failure::Error> {
+        self.conn.transaction(|conn| {
+            for title in titles {
+                let id = Uuid::new_v4();
+
+                insert_into(position::table)
+                    .values(Position { id, title })
+                    .execute(conn)?;
+
+                insert_into(positions::table)
+                    .values(Positions {
+                        entity_id,
+                        position_id: id,
+                    })
+                    .execute(conn)?;
+            }
+
+            diesel::result::QueryResult::Ok(())
+        })?;
+
+        Ok(())
+    }
+
+    pub fn insert_flags(
+        &mut self,
+        entity_id: Uuid,
+        flag_kinds: Vec<Flagkind>,
+    ) -> Result<(), failure::Error> {
+        self.conn.transaction(|conn| {
+            for flag_kind in flag_kinds {
+                let id = Uuid::new_v4();
+                insert_into(flag::table)
+                    .values(Flag {
+                        id,
+                        kind: flag_kind,
+                    })
+                    .execute(conn)?;
+
+                insert_into(flags::table)
+                    .values(Flags {
+                        entity_id,
+                        flag_id: id,
+                    })
+                    .execute(conn)?;
+            }
+
+            diesel::result::QueryResult::Ok(())
+        })?;
+
+        Ok(())
+    }
+
+    pub fn insert_datasets(
+        &mut self,
+        entity_id: Uuid,
+        names: Vec<String>,
+    ) -> Result<(), failure::Error> {
+        self.conn.transaction(|conn| {
+            for name in names {
+                let id = Uuid::new_v4();
+                insert_into(dataset::table)
+                    .values(Dataset { id, name })
+                    .execute(conn)?;
+
+                insert_into(datasets::table)
+                    .values(Datasets {
+                        entity_id,
+                        dataset_id: id,
+                    })
+                    .execute(conn)?;
+            }
+
+            diesel::result::QueryResult::Ok(())
+        })?;
+
+        Ok(())
     }
 }
