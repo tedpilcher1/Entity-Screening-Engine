@@ -328,4 +328,28 @@ impl Database {
 
         Ok(())
     }
+
+    pub fn get_flag_kinds(&mut self, entity_id: &Uuid) -> Result<Vec<Flagkind>, failure::Error> {
+        Ok(flag::table
+            .inner_join(flags::table.on(flags::flag_id.eq(flag::id)))
+            .filter(flags::entity_id.eq(entity_id))
+            .select(flag::kind)
+            .load::<Flagkind>(&mut self.conn)?)
+    }
+
+    pub fn get_positions(&mut self, entity_id: &Uuid) -> Result<Vec<String>, failure::Error> {
+        Ok(position::table
+            .inner_join(positions::table.on(positions::position_id.eq(position::id)))
+            .filter(positions::entity_id.eq(entity_id))
+            .select(position::title)
+            .load::<String>(&mut self.conn)?)
+    }
+
+    pub fn get_datasets(&mut self, entity_id: &Uuid) -> Result<Vec<String>, failure::Error> {
+        Ok(dataset::table
+            .inner_join(datasets::table.on(datasets::dataset_id.eq(dataset::id)))
+            .filter(datasets::entity_id.eq(entity_id))
+            .select(dataset::name)
+            .load::<String>(&mut self.conn)?)
+    }
 }
