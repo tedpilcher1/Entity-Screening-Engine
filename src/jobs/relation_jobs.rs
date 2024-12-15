@@ -2,11 +2,11 @@ use log::warn;
 use serde::{Deserialize, Serialize};
 use uuid::Uuid;
 
-use crate::company_house::company_house_apis::CompanyHouseClient;
 use crate::jobs::jobs::JobKind;
 use crate::models::{Entity, EntityRelation, Entitykind, Relationship, Relationshipkind};
-use crate::postgres::Database;
-use crate::pulsar::PulsarProducer;
+use crate::workers::entity_relation_worker::EntityRelationWorker;
+
+use super::risk_jobs::{LocalRiskJob, RiskJob, RiskJobScope};
 
 #[derive(Serialize, Deserialize, Debug)]
 pub struct RelationJob {
@@ -26,22 +26,20 @@ pub enum RelationJobKind {
 }
 
 impl RelationJob {
-    pub async fn do_work(
-        &self,
-        database: &mut Database,
-        producer: &mut PulsarProducer,
-        company_house_client: &CompanyHouseClient,
-    ) -> Result<(), failure::Error> {
+    pub async fn do_work(&self, worker: &mut EntityRelationWorker) -> Result<(), failure::Error> {
         let entities: Vec<EntityRelation> = match self.relation_job_kind {
-            RelationJobKind::Shareholders => company_house_client
+            RelationJobKind::Shareholders => worker
+                .company_house_client
                 .get_shareholders(&self.company_house_number)
                 .await?
                 .into(),
-            RelationJobKind::Officers => company_house_client
+            RelationJobKind::Officers => worker
+                .company_house_client
                 .get_officers(&self.company_house_number)
                 .await?
                 .into(),
-            RelationJobKind::Appointments => company_house_client
+            RelationJobKind::Appointments => worker
+                .company_house_client
                 .get_appointments(&self.officer_id)
                 .await?
                 .into(),
@@ -56,9 +54,8 @@ impl RelationJob {
         self.do_job(
             entities,
             relationship_kind,
-            database,
-            producer,
             self.relation_job_kind == RelationJobKind::Appointments,
+            worker,
         )
         .await
     }
@@ -67,22 +64,23 @@ impl RelationJob {
         &self,
         entity_relations: Vec<EntityRelation>,
         relationship_kind: Relationshipkind,
-        database: &mut Database,
-        producer: &mut PulsarProducer,
         reverse_relation: bool,
+        worker: &mut EntityRelationWorker,
     ) -> Result<(), failure::Error> {
         for entity_relation in entity_relations {
-            let parent_id = database.insert_entity(&entity_relation.entity, self.check_id)?;
+            let parent_id = worker
+                .database
+                .insert_entity(&entity_relation.entity, self.check_id)?;
 
             let insert_relationship_result = match reverse_relation {
-                true => database.insert_relationship(Relationship {
+                true => worker.database.insert_relationship(Relationship {
                     parent_id: self.child_id,
                     child_id: parent_id,
                     kind: relationship_kind,
                     started_on: entity_relation.started_on,
                     ended_on: entity_relation.ended_on,
                 }),
-                false => database.insert_relationship(Relationship {
+                false => worker.database.insert_relationship(Relationship {
                     parent_id,
                     child_id: self.child_id,
                     kind: relationship_kind,
@@ -93,7 +91,7 @@ impl RelationJob {
 
             match insert_relationship_result {
                 Ok(_) => {
-                    self.queue_further_jobs(database, producer, &entity_relation.entity)
+                    self.queue_further_jobs(&entity_relation.entity, worker)
                         .await?
                 }
                 // log error and continue
@@ -102,7 +100,7 @@ impl RelationJob {
                     relationship_kind, e
                 ),
             }
-            self.queue_further_jobs(database, producer, &entity_relation.entity)
+            self.queue_further_jobs(&entity_relation.entity, worker)
                 .await?;
         }
 
@@ -111,9 +109,8 @@ impl RelationJob {
 
     async fn queue_further_jobs(
         &self,
-        database: &mut Database,
-        producer: &mut PulsarProducer,
         entity: &Entity,
+        worker: &mut EntityRelationWorker,
     ) -> Result<(), failure::Error> {
         match entity.kind {
             Entitykind::Company => {
@@ -127,8 +124,9 @@ impl RelationJob {
                         relation_job_kind: RelationJobKind::Shareholders,
                     });
 
-                    producer
-                        .enqueue_job(database, self.check_id, job_kind)
+                    worker
+                        .entity_relation_producer
+                        .enqueue_job(&mut worker.database, self.check_id, job_kind)
                         .await?;
                 }
                 if self.remaining_depth > 0 {
@@ -141,14 +139,15 @@ impl RelationJob {
                         relation_job_kind: RelationJobKind::Officers,
                     });
 
-                    producer
-                        .enqueue_job(database, self.check_id, job_kind)
+                    worker
+                        .entity_relation_producer
+                        .enqueue_job(&mut worker.database, self.check_id, job_kind)
                         .await?;
                 }
             }
             Entitykind::Individual => {
                 if self.remaining_depth > 0 {
-                    let job_kind = JobKind::RelationJob(RelationJob {
+                    let appointment_job = JobKind::RelationJob(RelationJob {
                         child_id: entity.id,
                         check_id: self.check_id,
                         company_house_number: entity.company_house_number.clone(),
@@ -157,10 +156,23 @@ impl RelationJob {
                         relation_job_kind: RelationJobKind::Appointments,
                     });
 
-                    producer
-                        .enqueue_job(database, self.check_id, job_kind)
+                    worker
+                        .entity_relation_producer
+                        .enqueue_job(&mut worker.database, self.check_id, appointment_job)
                         .await?;
                 }
+
+                let flag_job = JobKind::RiskJob(RiskJob {
+                    scope: RiskJobScope::Local(LocalRiskJob {
+                        entity_id: entity.id,
+                        kind: super::risk_jobs::LocalRiskJobKind::Flags,
+                    }),
+                });
+
+                worker
+                    .risk_producer
+                    .enqueue_job(&mut worker.database, self.check_id, flag_job)
+                    .await?;
             }
         }
 
