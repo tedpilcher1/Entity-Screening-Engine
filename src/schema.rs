@@ -6,6 +6,10 @@ pub mod sql_types {
     pub struct Entitykind;
 
     #[derive(diesel::query_builder::QueryId, Clone, diesel::sql_types::SqlType)]
+    #[diesel(postgres_type(name = "flagkind"))]
+    pub struct Flagkind;
+
+    #[derive(diesel::query_builder::QueryId, Clone, diesel::sql_types::SqlType)]
     #[diesel(postgres_type(name = "relationshipkind"))]
     pub struct Relationshipkind;
 }
@@ -32,6 +36,20 @@ diesel::table! {
 }
 
 diesel::table! {
+    dataset (id) {
+        id -> Uuid,
+        name -> Text,
+    }
+}
+
+diesel::table! {
+    datasets (entity_id, dataset_id) {
+        entity_id -> Uuid,
+        dataset_id -> Uuid,
+    }
+}
+
+diesel::table! {
     use diesel::sql_types::*;
     use super::sql_types::Entitykind;
 
@@ -49,11 +67,42 @@ diesel::table! {
 }
 
 diesel::table! {
+    use diesel::sql_types::*;
+    use super::sql_types::Flagkind;
+
+    flag (id) {
+        id -> Uuid,
+        kind -> Flagkind,
+    }
+}
+
+diesel::table! {
+    flags (entity_id, flag_id) {
+        entity_id -> Uuid,
+        flag_id -> Uuid,
+    }
+}
+
+diesel::table! {
     job (id) {
         id -> Uuid,
         enqueued_at -> Timestamp,
         completed_at -> Nullable<Timestamp>,
         has_error -> Bool,
+    }
+}
+
+diesel::table! {
+    position (id) {
+        id -> Uuid,
+        title -> Text,
+    }
+}
+
+diesel::table! {
+    positions (entity_id, position_id) {
+        entity_id -> Uuid,
+        position_id -> Uuid,
     }
 }
 
@@ -74,7 +123,13 @@ diesel::allow_tables_to_appear_in_same_query!(
     check,
     check_entity_map,
     check_job_map,
+    dataset,
+    datasets,
     entity,
+    flag,
+    flags,
     job,
+    position,
+    positions,
     relationship,
 );
