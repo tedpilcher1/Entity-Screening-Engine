@@ -391,7 +391,7 @@ pub struct CheckJobMap {
     pub job_id: Uuid,
 }
 
-#[derive(Debug, AsExpression, FromSqlRow, Default, Serialize, Deserialize, PartialEq)]
+#[derive(Debug, AsExpression, FromSqlRow, Default, Serialize, Deserialize, PartialEq, Eq, Hash)]
 #[diesel(sql_type = crate::schema::sql_types::Flagkind)]
 pub enum Flagkind {
     #[default]

@@ -1,4 +1,4 @@
-use std::cmp::min;
+use std::{cmp::min, collections::HashSet};
 
 use actix_cors::Cors;
 use chrono::{NaiveDate, NaiveDateTime};
@@ -29,7 +29,7 @@ struct CheckInfo {
     instructed_on: NaiveDateTime,
     completed_on: Option<NaiveDateTime>,
     risk_level: String, // TODO: change when implemented
-    flags: Vec<String>, // TODO: change when implemented
+    distinct_flags: Vec<Flagkind>,
 }
 
 #[derive(Serialize, Deserialize)]
@@ -77,7 +77,7 @@ fn get_entity_response(check_id: Uuid) -> Result<EntityCheckResponse, failure::E
         let officers = database.get_relations(entity.id, Relationshipkind::Officer)?;
         let shareholders = database.get_relations(entity.id, Relationshipkind::Shareholder)?;
 
-        let flags = database.get_flag_kinds(&entity.id)?;
+        let flags = database.get_flag_kinds_for_entity(&entity.id)?;
         let positions = database.get_positions(&entity.id)?;
         let datasets = database.get_positions(&entity.id)?;
 
@@ -161,6 +161,14 @@ async fn start_check(company_house_number: String, depth: usize) -> Result<Uuid,
     Ok(check_id)
 }
 
+fn get_distinct_flags(database: &mut Database, check_id: &Uuid) -> Result<Vec<Flagkind>, failure::Error> {
+    let mut flags = database.get_flag_kinds_for_check(check_id)?;
+    let flag_set: HashSet<_> = flags.drain(..).collect();
+    flags.extend(flag_set.into_iter());
+
+    Ok(flags)
+}
+
 fn get_checks() -> Result<ChecksResponse, failure::Error> {
     let mut database = Database::connect().expect("Should be able to connect to db");
     let checks = database.get_checks()?;
@@ -176,7 +184,7 @@ fn get_checks() -> Result<ChecksResponse, failure::Error> {
             instructed_on: check.started_at,
             completed_on: database.check_completed_at(check.id)?,
             risk_level: "Low".to_string(), // TODO: update once risk implemented
-            flags: vec![],                 // TODO: update once flags implemented
+            distinct_flags: get_distinct_flags(&mut database, &check.id)?,
         };
         check_response_vec.push(check_response);
 
