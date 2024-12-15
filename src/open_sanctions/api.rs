@@ -48,6 +48,12 @@ mod tests {
     async fn test1() {
         dotenv().ok();
         let client = OpenSanctionsClient::new();
-        client.get_flags("Boris Frid".to_string()).await.unwrap();
+        let result = client.get_flags("boris johnson".to_string()).await.unwrap();
+
+        if let Some(entity) = result.results.first() {
+            for (key, value) in entity.properties.to_owned().into_iter() {
+                println!("{:?} : {:?}", key, value)
+            }
+        }
     }
 }

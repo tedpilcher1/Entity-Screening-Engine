@@ -6,7 +6,7 @@ pub struct FlagSearchResponse {
     pub limit: u32,
     pub offset: u32,
     pub total: Total,
-    pub results: Vec<Entity>,
+    pub results: Vec<OSEntity>,
     pub facets: Facets,
 }
 
@@ -17,7 +17,7 @@ pub struct Total {
 }
 
 #[derive(Debug, Serialize, Deserialize)]
-pub struct Entity {
+pub struct OSEntity {
     pub id: String,
     pub caption: String,
     pub schema: String,
