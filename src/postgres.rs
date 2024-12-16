@@ -4,10 +4,12 @@ use diesel::{prelude::*, update};
 use uuid::Uuid;
 
 use crate::models::{
-    Check, CheckEntityMap, CheckJobMap, Dataset, Datasets, DormantCompany, Entity, Flag, Flagkind, Flags, Job, OutlierAge, Position, Positions, Relationship, Relationshipkind
+    Check, CheckEntityMap, CheckJobMap, Dataset, Datasets, DormantCompany, Entity, Flag, Flagkind,
+    Flags, Job, OutlierAge, Position, Positions, Relationship, Relationshipkind,
 };
 use crate::schema::{
-    check, check_entity_map, check_job_map, dataset, datasets, dormant_company, entity, flag, flags, job, outlier_age, position, positions, relationship
+    check, check_entity_map, check_job_map, dataset, datasets, dormant_company, entity, flag,
+    flags, job, outlier_age, position, positions, relationship,
 };
 
 pub struct Database {
