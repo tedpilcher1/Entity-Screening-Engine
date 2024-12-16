@@ -4,12 +4,10 @@ use diesel::{prelude::*, update};
 use uuid::Uuid;
 
 use crate::models::{
-    Check, CheckEntityMap, CheckJobMap, Dataset, Datasets, Entity, Flag, Flagkind, Flags, Job,
-    OutlierAge, Position, Positions, Relationship, Relationshipkind,
+    Check, CheckEntityMap, CheckJobMap, Dataset, Datasets, DormantCompany, Entity, Flag, Flagkind, Flags, Job, OutlierAge, Position, Positions, Relationship, Relationshipkind
 };
 use crate::schema::{
-    check, check_entity_map, check_job_map, dataset, datasets, entity, flag, flags, job,
-    outlier_age, position, positions, relationship,
+    check, check_entity_map, check_job_map, dataset, datasets, dormant_company, entity, flag, flags, job, outlier_age, position, positions, relationship
 };
 
 pub struct Database {
@@ -393,5 +391,30 @@ impl Database {
             .optional()?;
 
         Ok(is_outlier.unwrap_or_default())
+    }
+
+    pub fn insert_dormant_company(
+        &mut self,
+        entity_id: &Uuid,
+        dormant: bool,
+    ) -> Result<(), failure::Error> {
+        insert_into(dormant_company::table)
+            .values(DormantCompany {
+                entity_id: *entity_id,
+                dormant,
+            })
+            .execute(&mut self.conn)?;
+
+        Ok(())
+    }
+
+    pub fn company_dormant(&mut self, entity_id: &Uuid) -> Result<bool, failure::Error> {
+        let is_dormant = dormant_company::table
+            .filter(dormant_company::entity_id.eq(*entity_id))
+            .select(dormant_company::dormant)
+            .first::<bool>(&mut self.conn)
+            .optional()?;
+
+        Ok(is_dormant.unwrap_or_default())
     }
 }
