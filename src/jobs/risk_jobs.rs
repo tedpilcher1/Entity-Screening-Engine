@@ -17,10 +17,16 @@ pub enum RiskJobScope {
     Local(LocalRiskJob),
 }
 
+// Jobs that should be run after a check has completed, and all (intended)
+// relations are identified
+// 
+// Considers all entities and relations
 #[derive(Serialize, Deserialize, Debug)]
 pub enum GlobalRiskJob {
+    // Determines if there is a circular relationship between entities
     CircularRelations,
-    ShellDetection,
+    // When companies are registered/created in bulk within the registration date window
+    MassRegistration,
 }
 
 #[derive(Serialize, Deserialize, Debug)]
@@ -29,9 +35,18 @@ pub struct LocalRiskJob {
     pub kind: LocalRiskJobKind,
 }
 
+// Jobs that can be run immedialty after an entity is recorded
+// 
+// Only consider a single entity without any relations
 #[derive(Serialize, Deserialize, Debug)]
 pub enum LocalRiskJobKind {
+    // Finds flags for entities (only individuals currently), i.e. sanctions
+    // Also find datasets and previous positions of entity
     Flags,
+    // Determines if individuals are implausibly young or old
+    OutlierAge,
+    // Determines if an entity has been dormant for more than 5 years
+    Dormancy,
 }
 
 impl RiskJob {
@@ -47,7 +62,13 @@ impl RiskJob {
         job: &GlobalRiskJob,
         worker: &mut RiskWorker,
     ) -> Result<(), failure::Error> {
-        todo!()
+        
+        match job {
+            GlobalRiskJob::CircularRelations => unimplemented!(),
+            GlobalRiskJob::MassRegistration => unimplemented!(),
+        }
+
+        Ok(())
     }
 
     async fn do_local_job(
@@ -58,6 +79,8 @@ impl RiskJob {
         let entity = worker.database.get_entity(job.entity_id)?;
         match job.kind {
             LocalRiskJobKind::Flags => self.do_flags_job(entity, worker).await,
+            LocalRiskJobKind::OutlierAge => unimplemented!(),
+            LocalRiskJobKind::Dormancy => unimplemented!(),
         }
     }
 
