@@ -1,3 +1,4 @@
+use chrono::{DateTime, Utc};
 use serde::{Deserialize, Serialize};
 use uuid::Uuid;
 
@@ -19,7 +20,7 @@ pub enum RiskJobScope {
 
 // Jobs that should be run after a check has completed, and all (intended)
 // relations are identified
-// 
+//
 // Considers all entities and relations
 #[derive(Serialize, Deserialize, Debug)]
 pub enum GlobalRiskJob {
@@ -36,7 +37,7 @@ pub struct LocalRiskJob {
 }
 
 // Jobs that can be run immedialty after an entity is recorded
-// 
+//
 // Only consider a single entity without any relations
 #[derive(Serialize, Deserialize, Debug)]
 pub enum LocalRiskJobKind {
@@ -62,7 +63,6 @@ impl RiskJob {
         job: &GlobalRiskJob,
         worker: &mut RiskWorker,
     ) -> Result<(), failure::Error> {
-        
         match job {
             GlobalRiskJob::CircularRelations => unimplemented!(),
             GlobalRiskJob::MassRegistration => unimplemented!(),
@@ -79,7 +79,7 @@ impl RiskJob {
         let entity = worker.database.get_entity(job.entity_id)?;
         match job.kind {
             LocalRiskJobKind::Flags => self.do_flags_job(entity, worker).await,
-            LocalRiskJobKind::OutlierAge => unimplemented!(),
+            LocalRiskJobKind::OutlierAge => self.do_outlier_age_job(entity, worker),
             LocalRiskJobKind::Dormancy => unimplemented!(),
         }
     }
@@ -111,6 +111,37 @@ impl RiskJob {
                     .insert_datasets(entity.id, os_entity.datasets.to_owned())?;
             }
         }
+        Ok(())
+    }
+
+    fn do_outlier_age_job(
+        &self,
+        entity: Entity,
+        worker: &mut RiskWorker,
+    ) -> Result<(), failure::Error> {
+        if entity.kind != Entitykind::Individual {
+            return Ok(());
+        }
+
+        let mut outlier_age = false;
+
+        if let Some(dob) = entity.date_of_origin {
+            let parsed_dob: DateTime<Utc> = dob.parse()?;
+
+            match chrono::Utc::now().years_since(parsed_dob) {
+                Some(age) => {
+                    if age < 15 || age > 85 {
+                        outlier_age = true;
+                    }
+                }
+                None => {}
+            }
+        }
+
+        worker
+            .database
+            .insert_outlier_age(&entity.id, outlier_age)?;
+
         Ok(())
     }
 }
