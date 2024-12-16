@@ -4,10 +4,12 @@ use diesel::{prelude::*, update};
 use uuid::Uuid;
 
 use crate::models::{
-    Check, CheckEntityMap, CheckJobMap, Dataset, Datasets, Entity, Flag, Flagkind, Flags, Job, OutlierAge, Position, Positions, Relationship, Relationshipkind
+    Check, CheckEntityMap, CheckJobMap, Dataset, Datasets, Entity, Flag, Flagkind, Flags, Job,
+    OutlierAge, Position, Positions, Relationship, Relationshipkind,
 };
 use crate::schema::{
-    check, check_entity_map, check_job_map, dataset, datasets, entity, flag, flags, job, outlier_age, position, positions, relationship
+    check, check_entity_map, check_job_map, dataset, datasets, entity, flag, flags, job,
+    outlier_age, position, positions, relationship,
 };
 
 pub struct Database {
@@ -327,7 +329,10 @@ impl Database {
         Ok(())
     }
 
-    pub fn get_flag_kinds_for_entity(&mut self, entity_id: &Uuid) -> Result<Vec<Flagkind>, failure::Error> {
+    pub fn get_flag_kinds_for_entity(
+        &mut self,
+        entity_id: &Uuid,
+    ) -> Result<Vec<Flagkind>, failure::Error> {
         Ok(flag::table
             .inner_join(flags::table.on(flags::flag_id.eq(flag::id)))
             .filter(flags::entity_id.eq(entity_id))
@@ -335,10 +340,15 @@ impl Database {
             .load::<Flagkind>(&mut self.conn)?)
     }
 
-    pub fn get_flag_kinds_for_check(&mut self, check_id: &Uuid) -> Result<Vec<Flagkind>, failure::Error> {
+    pub fn get_flag_kinds_for_check(
+        &mut self,
+        check_id: &Uuid,
+    ) -> Result<Vec<Flagkind>, failure::Error> {
         Ok(flag::table
             .inner_join(flags::table.on(flags::flag_id.eq(flag::id)))
-            .inner_join(check_entity_map::table.on(check_entity_map::entity_id.eq(flags::entity_id)))
+            .inner_join(
+                check_entity_map::table.on(check_entity_map::entity_id.eq(flags::entity_id)),
+            )
             .filter(check_entity_map::check_id.eq(check_id))
             .select(flag::kind)
             .load::<Flagkind>(&mut self.conn)?)
@@ -360,9 +370,16 @@ impl Database {
             .load::<String>(&mut self.conn)?)
     }
 
-    pub fn insert_outlier_age(&mut self, entity_id: &Uuid, outlier: bool) -> Result<(), failure::Error> {
+    pub fn insert_outlier_age(
+        &mut self,
+        entity_id: &Uuid,
+        outlier: bool,
+    ) -> Result<(), failure::Error> {
         insert_into(outlier_age::table)
-            .values(OutlierAge { entity_id: *entity_id, outlier })
+            .values(OutlierAge {
+                entity_id: *entity_id,
+                outlier,
+            })
             .execute(&mut self.conn)?;
 
         Ok(())

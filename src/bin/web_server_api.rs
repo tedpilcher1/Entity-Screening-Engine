@@ -161,7 +161,10 @@ async fn start_check(company_house_number: String, depth: usize) -> Result<Uuid,
     Ok(check_id)
 }
 
-fn get_distinct_flags(database: &mut Database, check_id: &Uuid) -> Result<Vec<Flagkind>, failure::Error> {
+fn get_distinct_flags(
+    database: &mut Database,
+    check_id: &Uuid,
+) -> Result<Vec<Flagkind>, failure::Error> {
     let mut flags = database.get_flag_kinds_for_check(check_id)?;
     let flag_set: HashSet<_> = flags.drain(..).collect();
     flags.extend(flag_set.into_iter());
