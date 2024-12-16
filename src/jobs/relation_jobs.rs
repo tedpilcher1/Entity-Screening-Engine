@@ -3,7 +3,7 @@ use serde::{Deserialize, Serialize};
 use uuid::Uuid;
 
 use crate::jobs::jobs::JobKind;
-use crate::jobs::risk_jobs::LocalRiskJobKind::{Flags, OutlierAge};
+use crate::jobs::risk_jobs::LocalRiskJobKind::{Dormancy, Flags, OutlierAge};
 use crate::models::{Entity, EntityRelation, Entitykind, Relationship, Relationshipkind};
 use crate::workers::entity_relation_worker::EntityRelationWorker;
 
@@ -145,6 +145,18 @@ impl RelationJob {
                         .enqueue_job(&mut worker.database, self.check_id, job_kind)
                         .await?;
                 }
+
+                let dormany_job = JobKind::RiskJob(RiskJob {
+                    scope: RiskJobScope::Local(LocalRiskJob {
+                        entity_id: entity.id,
+                        kind: Dormancy,
+                    }),
+                });
+
+                worker
+                    .risk_producer
+                    .enqueue_job(&mut worker.database, self.check_id, dormany_job)
+                    .await?;
             }
             Entitykind::Individual => {
                 if self.remaining_depth > 0 {
