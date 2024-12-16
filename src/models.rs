@@ -200,26 +200,32 @@ impl TryFrom<(ShareholderListItem, bool)> for EntityRelation {
     fn try_from(value: (ShareholderListItem, bool)) -> Result<Self, Self::Error> {
         let shareholder = value.0;
         let is_root = value.1;
-
-        // TODO: this should be simplified
         let shareholder_identification = match shareholder.identification {
             Some(identification) => identification,
             None => return Err(()),
         };
-
         let company_house_number = match shareholder_identification.registration_number {
             Some(registration_numer) => registration_numer,
             None => return Err(()),
         };
-
-        // let company_house_number = format!("{:0>8}", company_house_number);
-
         let (country, postal_code) = match shareholder.address {
             Some(address) => (address.country, address.postal_code),
             None => (None, None),
         };
 
-        let doi = Some("00/00/0000".to_string()); // TODO THIS PROPERLY
+        let date_of_origin = match shareholder.date_of_birth {
+            Some(dob) => {
+                let day = dob.day.unwrap_or_else(|| 0);
+                let month = dob.month.unwrap_or_else(|| 0);
+                
+                if let Some(year) = dob.year {
+                    Some(format!("{}/{}/{}", day.to_string(), month.to_string(), year.to_string()))
+                } else {
+                    None
+                }
+            },
+            None => None,
+        };
 
         let entity = Entity {
             id: Uuid::new_v4(),
@@ -229,7 +235,7 @@ impl TryFrom<(ShareholderListItem, bool)> for EntityRelation {
             kind: shareholder.kind.into(),
             country: country,
             postal_code: postal_code,
-            date_of_origin: doi,
+            date_of_origin,
             is_root,
         };
 
