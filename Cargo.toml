@@ -7,7 +7,7 @@ edition = "2021"
 axum = "0.7.7"
 tokio = { version = "1.40.0", features = ["full", "macros", "rt-multi-thread"] }
 tower = "0.5.1"
-reqwest = { version = "0.12.8", features = ["json"] }
+reqwest = { version = "0.12.8", features = ["json", "stream"] }
 dotenv = "0.15.0"
 serde = { version = "1.0", features = ["derive"] }
 serde_json = "1.0"
@@ -23,7 +23,7 @@ diesel = { version = "2.2.5", features = ["postgres", "uuid", "chrono"] }
 diesel-derive-enum = { version = "0.4.4", features = ["postgres"] }
 actix-cors = "0.7.0"
 governor = "0.8.0"
-
+tokio-util = "0.7.13"
 
 [dependencies.uuid]
 version = "1.11.0"
