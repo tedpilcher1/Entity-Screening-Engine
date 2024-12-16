@@ -3,10 +3,8 @@ use serde::{Deserialize, Serialize};
 use uuid::Uuid;
 
 use crate::jobs::jobs::JobKind;
-use crate::jobs::risk_jobs::LocalRiskJobKind::{OutlierAge, Flags};
-use crate::models::{
-    Entity, EntityRelation, Entitykind, Relationship, Relationshipkind,
-};
+use crate::jobs::risk_jobs::LocalRiskJobKind::{Flags, OutlierAge};
+use crate::models::{Entity, EntityRelation, Entitykind, Relationship, Relationshipkind};
 use crate::workers::entity_relation_worker::EntityRelationWorker;
 
 use super::risk_jobs::{LocalRiskJob, RiskJob, RiskJobScope};
