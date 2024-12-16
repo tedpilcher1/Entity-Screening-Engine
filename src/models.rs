@@ -742,3 +742,11 @@ pub struct OutlierAge {
     pub entity_id: Uuid,
     pub outlier: bool,
 }
+
+#[derive(Queryable, Selectable, Insertable)]
+#[diesel(table_name = crate::schema::dormant_company)]
+#[diesel(check_for_backend(diesel::pg::Pg))]
+pub struct DormantCompany {
+    pub entity_id: Uuid,
+    pub dormant: bool,
+}
