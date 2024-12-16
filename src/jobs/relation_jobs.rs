@@ -3,7 +3,10 @@ use serde::{Deserialize, Serialize};
 use uuid::Uuid;
 
 use crate::jobs::jobs::JobKind;
-use crate::models::{Entity, EntityRelation, Entitykind, Relationship, Relationshipkind};
+use crate::jobs::risk_jobs::LocalRiskJobKind::{OutlierAge, Flags};
+use crate::models::{
+    Entity, EntityRelation, Entitykind, Relationship, Relationshipkind,
+};
 use crate::workers::entity_relation_worker::EntityRelationWorker;
 
 use super::risk_jobs::{LocalRiskJob, RiskJob, RiskJobScope};
@@ -165,13 +168,24 @@ impl RelationJob {
                 let flag_job = JobKind::RiskJob(RiskJob {
                     scope: RiskJobScope::Local(LocalRiskJob {
                         entity_id: entity.id,
-                        kind: super::risk_jobs::LocalRiskJobKind::Flags,
+                        kind: Flags,
                     }),
                 });
 
                 worker
                     .risk_producer
                     .enqueue_job(&mut worker.database, self.check_id, flag_job)
+                    .await?;
+
+                let outlier_age_job = JobKind::RiskJob(RiskJob {
+                    scope: RiskJobScope::Local(LocalRiskJob {
+                        entity_id: entity.id,
+                        kind: OutlierAge,
+                    }),
+                });
+                worker
+                    .risk_producer
+                    .enqueue_job(&mut worker.database, self.check_id, outlier_age_job)
                     .await?;
             }
         }
