@@ -4,7 +4,8 @@ use reqwest::{self, header, Client};
 use std::{collections::HashMap, env};
 
 use super::company_house_response_types::{
-    AppointmentsResponse, CompanySearchResponse, OfficerListResponse, ShareholderList,
+    AppointmentsResponse, CompanySearchResponse, FilingHistoryResponse, OfficerListResponse,
+    ShareholderList,
 };
 
 const COMPANY_SEARCH_URL: &str = "https://api.company-information.service.gov.uk/search/companies";
@@ -109,6 +110,27 @@ impl CompanyHouseClient {
         let response = self.client.get(url).headers(headers).send().await?;
         let appointments: AppointmentsResponse = response.json().await?;
         Ok(appointments)
+    }
+
+    pub async fn get_filing_history(
+        &self,
+        company_number: &String,
+    ) -> Result<FilingHistoryResponse, failure::Error> {
+        let url = format!(
+            "https://api.company-information.service.gov.uk/company/{}/filing-history",
+            company_number
+        );
+
+        let mut headers = header::HeaderMap::new();
+        headers.insert(
+            "Authorization",
+            header::HeaderValue::from_str(&format!("{}", API_KEY.as_str()))?,
+        );
+
+        let response = self.client.get(url).headers(headers).send().await?;
+
+        let filing_history: FilingHistoryResponse = response.json().await?;
+        Ok(filing_history)
     }
 }
 

@@ -277,3 +277,61 @@ pub struct FormerName {
     pub forenames: Option<String>,
     pub surname: Option<String>,
 }
+
+#[derive(Debug, Serialize, Deserialize, Clone)]
+pub struct FilingHistoryResponse {
+    pub etag: Option<String>,
+    pub filing_history_status: Option<String>,
+    pub items: Vec<FilingHistoryItem>,
+    pub items_per_page: Option<i32>,
+    pub kind: Option<String>,
+    pub start_index: Option<i32>,
+    pub total_count: Option<i32>,
+}
+
+#[derive(Debug, Serialize, Deserialize, Clone)]
+pub struct FilingHistoryItem {
+    pub annotations: Option<Vec<Annotation>>,
+    pub associated_filings: Option<Vec<AssociatedFiling>>,
+    pub barcode: Option<String>,
+    pub category: Option<String>,
+    pub date: Option<NaiveDate>,
+    pub description: Option<String>,
+    pub links: Option<ItemLinks>,
+    pub pages: Option<i32>,
+    pub paper_filed: Option<bool>,
+    pub resolutions: Option<Vec<Resolution>>,
+    pub subcategory: Option<String>,
+    pub transaction_id: Option<String>,
+    pub r#type: Option<String>,
+}
+
+#[derive(Debug, Serialize, Deserialize, Clone)]
+pub struct Annotation {
+    pub annotation: Option<String>,
+    pub date: Option<NaiveDate>,
+    pub description: Option<String>,
+}
+
+#[derive(Debug, Serialize, Deserialize, Clone)]
+pub struct AssociatedFiling {
+    pub date: Option<NaiveDate>,
+    pub description: Option<String>,
+    pub r#type: Option<String>,
+}
+
+#[derive(Debug, Serialize, Deserialize, Clone)]
+pub struct ItemLinks {
+    pub document_metadata: Option<String>,
+    pub self_: Option<String>,
+}
+
+#[derive(Debug, Serialize, Deserialize, Clone)]
+pub struct Resolution {
+    pub category: Option<String>,
+    pub description: Option<String>,
+    pub document_id: Option<String>,
+    pub receive_date: Option<NaiveDate>,
+    pub subcategory: Option<String>,
+    pub r#type: Option<String>,
+}
