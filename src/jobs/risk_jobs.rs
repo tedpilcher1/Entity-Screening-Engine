@@ -1,4 +1,4 @@
-use chrono::{DateTime, Utc};
+use chrono::{DateTime, Duration, NaiveDate, Offset, TimeZone, Utc};
 use serde::{Deserialize, Serialize};
 use uuid::Uuid;
 
@@ -6,6 +6,8 @@ use crate::{
     models::{Entity, Entitykind, FlagStringList},
     workers::risk_worker::RiskWorker,
 };
+
+const DORMANCY_YEARS: i64 = 5;
 
 #[derive(Serialize, Deserialize, Debug)]
 pub struct RiskJob {
@@ -46,7 +48,7 @@ pub enum LocalRiskJobKind {
     Flags,
     // Determines if individuals are implausibly young or old
     OutlierAge,
-    // Determines if an entity has been dormant for more than 5 years
+    // Determines if a company has been dormant for more than 5 years
     Dormancy,
 }
 
@@ -80,7 +82,7 @@ impl RiskJob {
         match job.kind {
             LocalRiskJobKind::Flags => self.do_flags_job(entity, worker).await,
             LocalRiskJobKind::OutlierAge => self.do_outlier_age_job(entity, worker),
-            LocalRiskJobKind::Dormancy => unimplemented!(),
+            LocalRiskJobKind::Dormancy => self.do_dormancy_job(entity, worker).await,
         }
     }
 
@@ -141,6 +143,38 @@ impl RiskJob {
         worker
             .database
             .insert_outlier_age(&entity.id, outlier_age)?;
+
+        Ok(())
+    }
+
+    async fn do_dormancy_job(
+        &self,
+        entity: Entity,
+        worker: &mut RiskWorker,
+    ) -> Result<(), failure::Error> {
+        // TODO: this should be rate limited as it's using the company house api
+        // but as companies are processed less frequently, it can go without for now
+
+        let mut is_dormant = false;
+        let filing_history = worker
+            .company_house_client
+            .get_filing_history(&entity.company_house_number)
+            .await?;
+
+        // if last filing over 5 years ago (relative to now), mark company as dormant
+        let last_filing = filing_history.items.first();
+        if let Some(last_filing) = last_filing {
+            if let Some(last_filing_date) = last_filing.date {
+                let five_years_ago = Utc::now().date_naive() - Duration::days(DORMANCY_YEARS * 365);
+                if last_filing_date < five_years_ago {
+                    is_dormant = true;
+                }
+            }
+        }
+
+        worker
+            .database
+            .insert_dormant_company(&entity.id, is_dormant)?;
 
         Ok(())
     }
