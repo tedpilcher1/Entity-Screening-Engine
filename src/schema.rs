@@ -93,6 +93,13 @@ diesel::table! {
 }
 
 diesel::table! {
+    outlier_age (entity_id) {
+        entity_id -> Uuid,
+        outlier -> Bool,
+    }
+}
+
+diesel::table! {
     position (id) {
         id -> Uuid,
         title -> Text,
@@ -129,6 +136,7 @@ diesel::allow_tables_to_appear_in_same_query!(
     flag,
     flags,
     job,
+    outlier_age,
     position,
     positions,
     relationship,
