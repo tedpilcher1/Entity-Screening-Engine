@@ -24,6 +24,7 @@ diesel-derive-enum = { version = "0.4.4", features = ["postgres"] }
 actix-cors = "0.7.0"
 governor = "0.8.0"
 tokio-util = "0.7.13"
+bytes = "1.7.1"
 
 [dependencies.uuid]
 version = "1.11.0"

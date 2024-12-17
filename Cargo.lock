@@ -9,6 +9,7 @@ dependencies = [
  "actix-cors",
  "actix-web",
  "axum",
+ "bytes",
  "chrono",
  "diesel",
  "diesel-derive-enum",
