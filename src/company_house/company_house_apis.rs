@@ -3,7 +3,7 @@ use lazy_static::lazy_static;
 use reqwest::{self, header, Client};
 use std::{collections::HashMap, env};
 
-use super::company_house_response_types::{
+use super::company_house_types::{
     AppointmentsResponse, CompanySearchResponse, FilingHistoryResponse, OfficerListResponse,
     ShareholderList,
 };
