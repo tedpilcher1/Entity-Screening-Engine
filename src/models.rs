@@ -217,13 +217,18 @@ impl TryFrom<(ShareholderListItem, bool)> for EntityRelation {
             Some(dob) => {
                 let day = dob.day.unwrap_or_else(|| 0);
                 let month = dob.month.unwrap_or_else(|| 0);
-                
+
                 if let Some(year) = dob.year {
-                    Some(format!("{}/{}/{}", day.to_string(), month.to_string(), year.to_string()))
+                    Some(format!(
+                        "{}/{}/{}",
+                        day.to_string(),
+                        month.to_string(),
+                        year.to_string()
+                    ))
                 } else {
                     None
                 }
-            },
+            }
             None => None,
         };
 
