@@ -150,6 +150,14 @@ diesel::table! {
 }
 
 diesel::table! {
+    processed_update (id) {
+        id -> Uuid,
+        processed_at -> Date,
+        timepoint -> Int4,
+    }
+}
+
+diesel::table! {
     use diesel::sql_types::*;
     use super::sql_types::Relationshipkind;
 
@@ -187,6 +195,7 @@ diesel::allow_tables_to_appear_in_same_query!(
     outlier_age,
     position,
     positions,
+    processed_update,
     relationship,
     snapshot,
 );
