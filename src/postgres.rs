@@ -4,14 +4,14 @@ use diesel::{prelude::*, update};
 use uuid::Uuid;
 
 use crate::models::{
-    Check, CheckEntityMap, CheckJobMap, CheckMonitoredEntity, Checkkind, Dataset, Datasets,
-    DormantCompany, Entity, Flag, Flagkind, Flags, Job, MonitoredEntity, MonitoringSpan,
-    OutlierAge, Position, Positions, Relationship, Relationshipkind,
+    Check, CheckEntityMap, CheckJobMap, CheckMonitoredEntity, CheckSnapshot, Checkkind, Dataset,
+    Datasets, DormantCompany, Entity, Flag, Flagkind, Flags, Job, MonitoredEntity, MonitoringSpan,
+    OutlierAge, Position, Positions, Relationship, Relationshipkind, Snapshot,
 };
 use crate::schema::{
-    check, check_entity_map, check_job_map, check_monitored_entity, dataset, datasets,
-    dormant_company, entity, flag, flags, job, monitored_entity, monitoring_span, outlier_age,
-    position, positions, relationship,
+    check, check_entity_map, check_job_map, check_monitored_entity, check_snapshot, dataset,
+    datasets, dormant_company, entity, flag, flags, job, monitored_entity, monitoring_span,
+    outlier_age, position, positions, relationship, snapshot,
 };
 
 pub struct Database {
@@ -479,6 +479,36 @@ impl Database {
             update(monitoring_span::table)
                 .filter(monitoring_span::id.eq(monitoring_span_id))
                 .set(monitoring_span::ended_at.eq(Utc::now().date_naive()))
+                .execute(conn)?;
+
+            diesel::result::QueryResult::Ok(())
+        })?;
+
+        Ok(())
+    }
+
+    pub fn insert_entity_snapshot(
+        &mut self,
+        entity: &Entity,
+        check_id: Uuid,
+    ) -> Result<(), failure::Error> {
+        let entity_id = self.insert_entity(entity, check_id)?;
+        let snapshot_id = Uuid::new_v4();
+
+        self.conn.transaction(|conn| {
+            insert_into(snapshot::table)
+                .values(Snapshot {
+                    id: snapshot_id,
+                    recieved_at: Utc::now().date_naive(),
+                    entity_id,
+                })
+                .execute(conn)?;
+
+            insert_into(check_snapshot::table)
+                .values(CheckSnapshot {
+                    check_id,
+                    snapshot_id,
+                })
                 .execute(conn)?;
 
             diesel::result::QueryResult::Ok(())
