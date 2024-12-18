@@ -6,12 +6,12 @@ use uuid::Uuid;
 use crate::models::{
     Check, CheckEntityMap, CheckJobMap, CheckMonitoredEntity, CheckSnapshot, Checkkind, Dataset,
     Datasets, DormantCompany, Entity, Flag, Flagkind, Flags, Job, MonitoredEntity, MonitoringSpan,
-    OutlierAge, Position, Positions, Relationship, Relationshipkind, Snapshot,
+    OutlierAge, Position, Positions, ProcessedUpdate, Relationship, Relationshipkind, Snapshot,
 };
 use crate::schema::{
     check, check_entity_map, check_job_map, check_monitored_entity, check_snapshot, dataset,
     datasets, dormant_company, entity, flag, flags, job, monitored_entity, monitoring_span,
-    outlier_age, position, positions, relationship, snapshot,
+    outlier_age, position, positions, processed_update, relationship, snapshot,
 };
 
 pub struct Database {
@@ -513,6 +513,18 @@ impl Database {
 
             diesel::result::QueryResult::Ok(())
         })?;
+
+        Ok(())
+    }
+
+    pub fn insert_processed_update(&mut self, timepoint: i32) -> Result<(), failure::Error> {
+        insert_into(processed_update::table)
+            .values(ProcessedUpdate {
+                id: Uuid::new_v4(),
+                processed_at: Utc::now().date_naive(),
+                timepoint,
+            })
+            .execute(&mut self.conn)?;
 
         Ok(())
     }
