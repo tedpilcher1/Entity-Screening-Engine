@@ -460,4 +460,30 @@ impl Database {
 
         Ok(())
     }
+
+    pub fn cancel_monitoring(&mut self, check_id: Uuid) -> Result<(), failure::Error> {
+        self.conn.transaction(|conn| {
+            let monitoring_span_id = monitoring_span::table
+                .inner_join(
+                    monitored_entity::table
+                        .on(monitored_entity::monitoring_span_id.eq(monitoring_span::id)),
+                )
+                .inner_join(
+                    check_monitored_entity::table
+                        .on(check_monitored_entity::monitored_entity_id.eq(monitored_entity::id)),
+                )
+                .filter(check_monitored_entity::check_id.eq(check_id))
+                .select(monitoring_span::id)
+                .first::<Uuid>(conn)?;
+
+            update(monitoring_span::table)
+                .filter(monitoring_span::id.eq(monitoring_span_id))
+                .set(monitoring_span::ended_at.eq(Utc::now().date_naive()))
+                .execute(conn)?;
+
+            diesel::result::QueryResult::Ok(())
+        })?;
+
+        Ok(())
+    }
 }
