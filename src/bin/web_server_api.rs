@@ -13,7 +13,7 @@ use Company_Investigation::{
         jobs::JobKind,
         relation_jobs::{RelationJob, RelationJobKind},
     },
-    models::{Entity, Flagkind, Relationshipkind},
+    models::{Checkkind, Entity, Flagkind, Relationshipkind},
     postgres::Database,
     pulsar::PulsarClient,
     workers::entity_relation_worker::ENTITY_RELATION_TOPIC,
@@ -120,7 +120,7 @@ async fn start_check(company_house_number: String, depth: usize) -> Result<Uuid,
         .await;
     let company_house_number = format!("{:0>8}", company_house_number);
 
-    let check_id = database.insert_check()?;
+    let check_id = database.insert_check(Checkkind::EntityRelation)?;
     let entity_id =
         database.insert_entity(&Entity::create_root(company_house_number.clone()), check_id)?;
 

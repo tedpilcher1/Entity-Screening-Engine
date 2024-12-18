@@ -4,8 +4,7 @@ use diesel::{prelude::*, update};
 use uuid::Uuid;
 
 use crate::models::{
-    Check, CheckEntityMap, CheckJobMap, Dataset, Datasets, DormantCompany, Entity, Flag, Flagkind,
-    Flags, Job, OutlierAge, Position, Positions, Relationship, Relationshipkind,
+    Check, CheckEntityMap, CheckJobMap, Checkkind, Dataset, Datasets, DormantCompany, Entity, Flag, Flagkind, Flags, Job, OutlierAge, Position, Positions, Relationship, Relationshipkind
 };
 use crate::schema::{
     check, check_entity_map, check_job_map, dataset, datasets, dormant_company, entity, flag,
@@ -23,13 +22,14 @@ impl Database {
         Ok(Self { conn })
     }
 
-    pub fn insert_check(&mut self) -> Result<Uuid, failure::Error> {
+    pub fn insert_check(&mut self, kind: Checkkind) -> Result<Uuid, failure::Error> {
         let id = Uuid::new_v4();
 
         insert_into(check::table)
             .values(&Check {
                 id,
                 started_at: Utc::now().naive_utc(),
+                kind,
             })
             .execute(&mut self.conn)?;
 

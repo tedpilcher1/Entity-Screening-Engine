@@ -5,7 +5,7 @@ use Company_Investigation::{
         jobs::JobKind,
         relation_jobs::{RelationJob, RelationJobKind},
     },
-    models::Entity,
+    models::{Checkkind, Entity},
     postgres::Database,
     pulsar::PulsarClient,
     workers::entity_relation_worker::ENTITY_RELATION_TOPIC,
@@ -24,7 +24,7 @@ async fn simulate_find_shareholders_endpoint() {
     let company_house_number = format!("{:0>8}", company_house_number);
 
     let mut conn = Database::connect().expect("Should be able to connect to db");
-    let check_id = conn.insert_check().expect("Should be able to insert check");
+    let check_id = conn.insert_check(Checkkind::EntityRelation).expect("Should be able to insert check");
     let child_id = conn
         .insert_entity(
             &Entity {
