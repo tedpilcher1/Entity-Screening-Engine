@@ -3,14 +3,5 @@ ALTER TABLE "check" DROP COLUMN "kind";
 
 
 
+DROP TYPE IF EXISTS "CHECKKIND";
 
-
-
-
-
-
-
-
-
-
-DROP TABLE IF EXISTS "dormant_company";

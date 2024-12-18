@@ -1,20 +1,4 @@
 -- Your SQL goes here
+CREATE TYPE CHECKKIND AS ENUM ('entity_relation', 'monitored_entity');
+
 ALTER TABLE "check" ADD COLUMN "kind" CHECKKIND NOT NULL;
-
-
-
-
-
-
-
-
-
-
-
-
-
-CREATE TABLE "dormant_company"(
-	"entity_id" UUID NOT NULL PRIMARY KEY,
-	"dormant" BOOL NOT NULL
-);
-
