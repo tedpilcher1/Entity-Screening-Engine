@@ -51,6 +51,13 @@ diesel::table! {
 }
 
 diesel::table! {
+    check_snapshot (check_id, snapshot_id) {
+        check_id -> Uuid,
+        snapshot_id -> Uuid,
+    }
+}
+
+diesel::table! {
     dataset (id) {
         id -> Uuid,
         name -> Text,
@@ -168,6 +175,7 @@ diesel::allow_tables_to_appear_in_same_query!(
     check_entity_map,
     check_job_map,
     check_monitored_entity,
+    check_snapshot,
     dataset,
     datasets,
     dormant_company,
