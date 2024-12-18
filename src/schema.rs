@@ -12,12 +12,20 @@ pub mod sql_types {
     #[derive(diesel::query_builder::QueryId, Clone, diesel::sql_types::SqlType)]
     #[diesel(postgres_type(name = "relationshipkind"))]
     pub struct Relationshipkind;
+
+    #[derive(diesel::query_builder::QueryId, Clone, diesel::sql_types::SqlType)]
+    #[diesel(postgres_type(name = "checkkind"))]
+    pub struct Checkkind;
 }
 
 diesel::table! {
+    use diesel::sql_types::*;
+    use super::sql_types::Checkkind;
+
     check (id) {
         id -> Uuid,
         started_at -> Timestamp,
+        kind -> Checkkind,
     }
 }
 

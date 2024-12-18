@@ -382,6 +382,7 @@ pub struct Relationship {
 pub struct Check {
     pub id: Uuid,
     pub started_at: NaiveDateTime,
+    pub kind: Checkkind,
 }
 
 #[derive(Queryable, Selectable, Insertable)]
@@ -760,4 +761,32 @@ pub struct OutlierAge {
 pub struct DormantCompany {
     pub entity_id: Uuid,
     pub dormant: bool,
+}
+
+#[derive(Debug, AsExpression, FromSqlRow, Default, Serialize, Deserialize, PartialEq)]
+#[diesel(sql_type = crate::schema::sql_types::Checkkind)]
+pub enum Checkkind {
+    #[default]
+    EntityRelation,
+    MonitoredEntity,
+}
+
+impl ToSql<crate::schema::sql_types::Checkkind, Pg> for Checkkind {
+    fn to_sql<'b>(&'b self, out: &mut Output<'b, '_, Pg>) -> serialize::Result {
+        match *self {
+            Checkkind::EntityRelation => out.write_all(b"entity_relation")?,
+            Checkkind::MonitoredEntity => out.write_all(b"monitored_entity")?,
+        }
+        Ok(IsNull::No)
+    }
+}
+
+impl FromSql<crate::schema::sql_types::Checkkind, Pg> for Checkkind {
+    fn from_sql(bytes: PgValue) -> deserialize::Result<Self> {
+        match bytes.as_bytes() {
+            b"entity_relation" => Ok(Checkkind::EntityRelation),
+            b"monitored_entity" => Ok(Checkkind::MonitoredEntity),
+            _ => Err("Unrecognized enum variant".into()),
+        }
+    }
 }
