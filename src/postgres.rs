@@ -4,12 +4,14 @@ use diesel::{prelude::*, update};
 use uuid::Uuid;
 
 use crate::models::{
-    Check, CheckEntityMap, CheckJobMap, Checkkind, Dataset, Datasets, DormantCompany, Entity, Flag,
-    Flagkind, Flags, Job, OutlierAge, Position, Positions, Relationship, Relationshipkind,
+    Check, CheckEntityMap, CheckJobMap, CheckMonitoredEntity, Checkkind, Dataset, Datasets,
+    DormantCompany, Entity, Flag, Flagkind, Flags, Job, MonitoredEntity, MonitoringSpan,
+    OutlierAge, Position, Positions, Relationship, Relationshipkind,
 };
 use crate::schema::{
-    check, check_entity_map, check_job_map, dataset, datasets, dormant_company, entity, flag,
-    flags, job, outlier_age, position, positions, relationship,
+    check, check_entity_map, check_job_map, check_monitored_entity, dataset, datasets,
+    dormant_company, entity, flag, flags, job, monitored_entity, monitoring_span, outlier_age,
+    position, positions, relationship,
 };
 
 pub struct Database {
@@ -419,5 +421,43 @@ impl Database {
             .optional()?;
 
         Ok(is_dormant.unwrap_or_default())
+    }
+
+    pub fn start_monitoring(
+        &mut self,
+        check_id: Uuid,
+        company_house_id: String,
+    ) -> Result<(), failure::Error> {
+        self.conn.transaction(|conn| {
+            let monitoring_span_id = Uuid::new_v4();
+
+            insert_into(monitoring_span::table)
+                .values(MonitoringSpan {
+                    id: monitoring_span_id,
+                    started_at: Utc::now().date_naive(),
+                    ended_at: None,
+                })
+                .execute(conn)?;
+
+            let monitored_entity_id = Uuid::new_v4();
+            insert_into(monitored_entity::table)
+                .values(MonitoredEntity {
+                    id: monitored_entity_id,
+                    company_house_id,
+                    monitoring_span_id,
+                })
+                .execute(conn)?;
+
+            insert_into(check_monitored_entity::table)
+                .values(CheckMonitoredEntity {
+                    check_id,
+                    monitored_entity_id,
+                })
+                .execute(conn)?;
+
+            diesel::result::QueryResult::Ok(())
+        })?;
+
+        Ok(())
     }
 }
