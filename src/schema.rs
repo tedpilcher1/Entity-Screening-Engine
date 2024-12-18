@@ -150,6 +150,13 @@ diesel::table! {
     }
 }
 
+diesel::table! {
+    monitored_entity(id) {
+        id -> Uuid,
+        company_house_id -> Text,
+    }
+}
+
 diesel::allow_tables_to_appear_in_same_query!(
     check,
     check_entity_map,

@@ -798,3 +798,12 @@ pub struct CheckMonitoredEntity {
     pub check_id: Uuid,
     pub monitored_entity_id: Uuid,
 }
+
+#[derive(Queryable, Selectable, Insertable)]
+#[diesel(table_name = crate::schema::monitored_entity)]
+#[diesel(check_for_backend(diesel::pg::Pg))]
+pub struct MonitoredEntity {
+    pub id: Uuid,
+    pub company_house_id: String,
+}
+ 
