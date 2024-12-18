@@ -1,11 +1,15 @@
 use dotenv::dotenv;
-use Company_Investigation::company_house::company_house_streaming_client::CompanyHouseStreamingClient;
+use Company_Investigation::workers::company_streaming_worker::{
+    StreamingWorker, StreamingWorkerKind,
+};
 
 #[tokio::main]
 async fn main() {
     dotenv().ok();
     env_logger::init();
 
-    let company_streaming_client = CompanyHouseStreamingClient::new();
-    company_streaming_client.connect_to_company_stream().await.unwrap();
+    let worker = StreamingWorker::new(StreamingWorkerKind::Company)
+        .await
+        .expect("Should be able to create company streaming worker");
+    worker.do_work().await.unwrap();
 }
