@@ -2,6 +2,10 @@
 
 pub mod sql_types {
     #[derive(diesel::query_builder::QueryId, Clone, diesel::sql_types::SqlType)]
+    #[diesel(postgres_type(name = "checkkind"))]
+    pub struct Checkkind;
+
+    #[derive(diesel::query_builder::QueryId, Clone, diesel::sql_types::SqlType)]
     #[diesel(postgres_type(name = "entitykind"))]
     pub struct Entitykind;
 
@@ -12,10 +16,6 @@ pub mod sql_types {
     #[derive(diesel::query_builder::QueryId, Clone, diesel::sql_types::SqlType)]
     #[diesel(postgres_type(name = "relationshipkind"))]
     pub struct Relationshipkind;
-
-    #[derive(diesel::query_builder::QueryId, Clone, diesel::sql_types::SqlType)]
-    #[diesel(postgres_type(name = "checkkind"))]
-    pub struct Checkkind;
 }
 
 diesel::table! {
@@ -44,6 +44,13 @@ diesel::table! {
 }
 
 diesel::table! {
+    check_monitored_entity (check_id, monitored_entity_id) {
+        check_id -> Uuid,
+        monitored_entity_id -> Uuid,
+    }
+}
+
+diesel::table! {
     dataset (id) {
         id -> Uuid,
         name -> Text,
@@ -54,6 +61,13 @@ diesel::table! {
     datasets (entity_id, dataset_id) {
         entity_id -> Uuid,
         dataset_id -> Uuid,
+    }
+}
+
+diesel::table! {
+    dormant_company (entity_id) {
+        entity_id -> Uuid,
+        dormant -> Bool,
     }
 }
 
@@ -101,6 +115,13 @@ diesel::table! {
 }
 
 diesel::table! {
+    monitored_entity (id) {
+        id -> Uuid,
+        company_house_id -> Text,
+    }
+}
+
+diesel::table! {
     outlier_age (entity_id) {
         entity_id -> Uuid,
         outlier -> Bool,
@@ -134,39 +155,19 @@ diesel::table! {
     }
 }
 
-diesel::table! {
-    use diesel::sql_types::*;
-
-    dormant_company (entity_id) {
-        entity_id -> Uuid,
-        dormant -> Bool,
-    }
-}
-
-diesel::table! {
-    check_monitored_entity(check_id, monitored_entity_id) {
-        check_id -> Uuid,
-        monitored_entity_id -> Uuid,
-    }
-}
-
-diesel::table! {
-    monitored_entity(id) {
-        id -> Uuid,
-        company_house_id -> Text,
-    }
-}
-
 diesel::allow_tables_to_appear_in_same_query!(
     check,
     check_entity_map,
     check_job_map,
+    check_monitored_entity,
     dataset,
     datasets,
+    dormant_company,
     entity,
     flag,
     flags,
     job,
+    monitored_entity,
     outlier_age,
     position,
     positions,
