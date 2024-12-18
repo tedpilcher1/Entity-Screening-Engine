@@ -129,6 +129,14 @@ diesel::table! {
 }
 
 diesel::table! {
+    monitoring_span (id) {
+        id -> Uuid,
+        started_at -> Date,
+        ended_at -> Nullable<Date>,
+    }
+}
+
+diesel::table! {
     outlier_age (entity_id) {
         entity_id -> Uuid,
         outlier -> Bool,
@@ -192,6 +200,7 @@ diesel::allow_tables_to_appear_in_same_query!(
     flags,
     job,
     monitored_entity,
+    monitoring_span,
     outlier_age,
     position,
     positions,

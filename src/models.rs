@@ -832,3 +832,12 @@ pub struct ProcessedUpdate {
     pub processed_at: NaiveDate,
     pub timepoint: i32,
 }
+
+#[derive(Queryable, Selectable, Insertable)]
+#[diesel(table_name = crate::schema::monitoring_span)]
+#[diesel(check_for_backend(diesel::pg::Pg))]
+pub struct MonitoringSpan {
+    pub id: Uuid,
+    pub started_at: NaiveDate,
+    pub ended_at: Option<NaiveDate>,
+}
