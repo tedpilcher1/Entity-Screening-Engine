@@ -790,3 +790,11 @@ impl FromSql<crate::schema::sql_types::Checkkind, Pg> for Checkkind {
         }
     }
 }
+
+#[derive(Queryable, Selectable, Insertable)]
+#[diesel(table_name = crate::schema::check_monitored_entity)]
+#[diesel(check_for_backend(diesel::pg::Pg))]
+pub struct CheckMonitoredEntity {
+    pub check_id: Uuid,
+    pub monitored_entity_id: Uuid,
+}

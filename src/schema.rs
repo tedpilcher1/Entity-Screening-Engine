@@ -143,6 +143,13 @@ diesel::table! {
     }
 }
 
+diesel::table! {
+    check_monitored_entity(check_id, monitored_entity_id) {
+        check_id -> Uuid,
+        monitored_entity_id -> Uuid,
+    }
+}
+
 diesel::allow_tables_to_appear_in_same_query!(
     check,
     check_entity_map,
