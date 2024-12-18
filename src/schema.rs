@@ -125,6 +125,7 @@ diesel::table! {
     monitored_entity (id) {
         id -> Uuid,
         company_house_id -> Text,
+        monitoring_span_id -> Uuid,
     }
 }
 

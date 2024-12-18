@@ -805,6 +805,7 @@ pub struct CheckMonitoredEntity {
 pub struct MonitoredEntity {
     pub id: Uuid,
     pub company_house_id: String,
+    pub monitoring_span_id: Uuid,
 }
 
 #[derive(Queryable, Selectable, Insertable)]
