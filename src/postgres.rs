@@ -528,4 +528,11 @@ impl Database {
 
         Ok(())
     }
+
+    pub fn get_last_processed_timepoint(&mut self) -> Result<i32, failure::Error> {
+        Ok(processed_update::table
+            .order_by(processed_update::processed_at.desc())
+            .select(processed_update::timepoint)
+            .first::<i32>(&mut self.conn)?)
+    }
 }
