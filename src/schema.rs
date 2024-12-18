@@ -155,6 +155,14 @@ diesel::table! {
     }
 }
 
+diesel::table! {
+    snapshot (id) {
+        id -> Uuid,
+        recieved_at -> Date,
+        entity_id -> Uuid,
+    }
+}
+
 diesel::allow_tables_to_appear_in_same_query!(
     check,
     check_entity_map,
@@ -172,4 +180,5 @@ diesel::allow_tables_to_appear_in_same_query!(
     position,
     positions,
     relationship,
+    snapshot,
 );

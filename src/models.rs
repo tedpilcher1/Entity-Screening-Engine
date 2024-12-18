@@ -806,4 +806,13 @@ pub struct MonitoredEntity {
     pub id: Uuid,
     pub company_house_id: String,
 }
+
+#[derive(Queryable, Selectable, Insertable)]
+#[diesel(table_name = crate::schema::snapshot)]
+#[diesel(check_for_backend(diesel::pg::Pg))]
+pub struct Snapshot {
+    pub id: Uuid,
+    pub recieved_at: NaiveDate,
+    pub entity_id: Uuid,
+}
  
