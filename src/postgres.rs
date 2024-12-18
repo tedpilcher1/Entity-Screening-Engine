@@ -4,7 +4,8 @@ use diesel::{prelude::*, update};
 use uuid::Uuid;
 
 use crate::models::{
-    Check, CheckEntityMap, CheckJobMap, Checkkind, Dataset, Datasets, DormantCompany, Entity, Flag, Flagkind, Flags, Job, OutlierAge, Position, Positions, Relationship, Relationshipkind
+    Check, CheckEntityMap, CheckJobMap, Checkkind, Dataset, Datasets, DormantCompany, Entity, Flag,
+    Flagkind, Flags, Job, OutlierAge, Position, Positions, Relationship, Relationshipkind,
 };
 use crate::schema::{
     check, check_entity_map, check_job_map, dataset, datasets, dormant_company, entity, flag,

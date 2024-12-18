@@ -815,7 +815,7 @@ pub struct Snapshot {
     pub recieved_at: NaiveDate,
     pub entity_id: Uuid,
 }
- 
+
 #[derive(Queryable, Selectable, Insertable)]
 #[diesel(table_name = crate::schema::check_snapshot)]
 #[diesel(check_for_backend(diesel::pg::Pg))]
@@ -823,7 +823,7 @@ pub struct CheckSnapshot {
     pub check_id: Uuid,
     pub snapshot_id: Uuid,
 }
- 
+
 #[derive(Queryable, Selectable, Insertable)]
 #[diesel(table_name = crate::schema::processed_update)]
 #[diesel(check_for_backend(diesel::pg::Pg))]
