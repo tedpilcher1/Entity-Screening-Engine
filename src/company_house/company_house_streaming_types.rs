@@ -191,3 +191,73 @@ pub struct Event {
     pub timepoint: i32,
     pub r#type: Option<String>,
 }
+
+#[derive(Debug, Serialize, Deserialize, Clone)]
+pub struct OfficerStreamingResponse {
+    pub data: Option<OfficerData>,
+    pub event: Option<Event>,
+    pub resource_id: Option<String>,
+    pub resource_kind: Option<String>,
+    pub resource_uri: Option<String>,
+}
+
+#[derive(Debug, Serialize, Deserialize, Clone)]
+pub struct OfficerData {
+    pub address: Option<Address>,
+    pub appointed_before: Option<String>,
+    pub appointed_on: Option<String>, // date
+    pub contact_details: Option<ContactDetails>,
+    pub country_of_residence: Option<String>,
+    pub date_of_birth: Option<DateOfBirth>,
+    pub etag: Option<String>,
+    pub former_names: Option<Vec<Name>>,
+    pub identification: Option<Identification>,
+    pub is_pre_1992_appointment: Option<bool>,
+    pub links: Option<OfficerLink>,
+    pub name: Option<String>,
+    pub nationality: Option<String>,
+    pub occupation: Option<String>,
+    pub officer_role: Option<String>,
+    pub person_number: Option<String>,
+    pub principal_office_address: Option<Address>,
+    pub resigned_on: Option<String>, // date
+    pub responsibilities: Option<String>,
+}
+
+#[derive(Debug, Serialize, Deserialize, Clone)]
+pub struct ContactDetails {
+    pub contact_name: Option<String>,
+}
+
+#[derive(Debug, Serialize, Deserialize, Clone)]
+pub struct DateOfBirth {
+    pub day: Option<i32>,
+    pub month: Option<i32>,
+    pub year: Option<i32>,
+}
+
+#[derive(Debug, Serialize, Deserialize, Clone)]
+pub struct Name {
+    pub forenames: Option<String>,
+    pub surname: Option<String>,
+}
+
+#[derive(Debug, Serialize, Deserialize, Clone)]
+pub struct Identification {
+    pub identification_type: Option<String>,
+    pub legal_authority: Option<String>,
+    pub legal_form: Option<String>,
+    pub place_registered: Option<String>,
+    pub registration_number: Option<String>,
+}
+
+#[derive(Debug, Serialize, Deserialize, Clone)]
+pub struct OfficerLink {
+    pub officer: Option<LinkedOfficer>,
+    pub self_link: Option<String>, // renamed from "self" as it's a reserved keyword
+}
+
+#[derive(Debug, Serialize, Deserialize, Clone)]
+pub struct LinkedOfficer {
+    pub appointments: Option<String>,
+}
