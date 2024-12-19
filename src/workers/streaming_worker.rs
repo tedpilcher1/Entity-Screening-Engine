@@ -6,6 +6,10 @@ use crate::{
         company_house_streaming_client::CompanyHouseStreamingClient,
         company_house_streaming_types::CompanyStreamingResponse,
     },
+    jobs::{
+        jobs::JobKind,
+        streaming_update_jobs::{StreamingUpdateJob, UpdateKind},
+    },
     postgres::Database,
     pulsar::{PulsarClient, PulsarProducer},
 };
@@ -47,7 +51,7 @@ impl StreamingWorker {
     }
 
     // TODO: handle reconnection when disconnected
-    pub async fn do_work(&self) -> Result<(), failure::Error> {
+    pub async fn do_work(&mut self) -> Result<(), failure::Error> {
         let mut stream = match self.kind {
             StreamingWorkerKind::Company => {
                 self.streaming_client.connect_to_company_stream().await?
@@ -59,14 +63,21 @@ impl StreamingWorker {
         let mut buffer: Vec<Vec<u8>> = Vec::new();
         while let Some(bytes_result) = stream.next().await {
             if let Ok(bytes) = bytes_result {
-                self.process_bytes(bytes, &mut buffer);
+                match self.process_bytes(bytes, &mut buffer).await {
+                    Ok(_) => println!("Successfully processed bytes"),
+                    Err(e) => println!("Failed to process bytes, error: {:?}", e),
+                }
             }
         }
 
         Ok(())
     }
 
-    fn process_bytes(&self, bytes: Bytes, buffer: &mut Vec<Vec<u8>>) {
+    async fn process_bytes(
+        &mut self,
+        bytes: Bytes,
+        buffer: &mut Vec<Vec<u8>>,
+    ) -> Result<(), failure::Error> {
         let chunks: Vec<&[u8]> = bytes.split_inclusive(|byte| byte == &b'\n').collect();
         for chunk in chunks {
             // skip heartbeat
@@ -78,32 +89,33 @@ impl StreamingWorker {
             let owned_chunk = chunk.to_owned();
             buffer.push(owned_chunk);
             if chunk.ends_with(&[10]) {
-                let completed_chunk = buffer.concat();
-
-                match self.kind {
-                    StreamingWorkerKind::Company => unimplemented!(),
-                    StreamingWorkerKind::Officer => unimplemented!(),
-                    StreamingWorkerKind::Shareholder => unimplemented!(),
-                }
-
-                match serde_json::from_slice::<CompanyStreamingResponse>(&completed_chunk) {
-                    Ok(company_streaming_response) => {
-                        println!("{:?}", company_streaming_response)
-                    }
-                    Err(e) => {
-                        println!("Failed to convert chunk into response, error: {:?}", e);
-                    }
-                }
+                self.process_chunk(buffer.concat()).await?;
                 buffer.clear();
             }
         }
+        Ok(())
     }
 
-    fn process_company_update(&self, chunk: Vec<u8>) -> Result<(), failure::Error> {
-        let company_streaming_response =
-            serde_json::from_slice::<CompanyStreamingResponse>(&chunk)?;
-        
-        self.update_event_producer.enqueue_job(&mut self.database, check_id, job_kind)
+    async fn process_chunk(&mut self, chunk: Vec<u8>) -> Result<(), failure::Error> {
+        let update = match self.kind {
+            StreamingWorkerKind::Company => {
+                let streaming_response: CompanyStreamingResponse = serde_json::from_slice(&chunk)?;
+
+                match (streaming_response.data, streaming_response.event) {
+                    (Some(data), Some(event)) => Some((UpdateKind::Company(data), event)),
+                    _ => None,
+                }
+            }
+            StreamingWorkerKind::Officer => unimplemented!(),
+            StreamingWorkerKind::Shareholder => unimplemented!(),
+        };
+
+        if let Some((kind, event)) = update {
+            let update_job = JobKind::StreamingUpdateJob(StreamingUpdateJob { event, kind });
+            self.update_event_producer
+                .enqueue_job(&mut self.database, None, update_job)
+                .await?;
+        }
 
         Ok(())
     }
