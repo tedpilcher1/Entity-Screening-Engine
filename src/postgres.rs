@@ -142,7 +142,7 @@ impl Database {
         Ok(check)
     }
 
-    pub fn add_job(&mut self, check_id: Uuid) -> Result<Uuid, failure::Error> {
+    pub fn add_job_with_check(&mut self, check_id: Uuid) -> Result<Uuid, failure::Error> {
         let id = Uuid::new_v4();
 
         self.conn.transaction(|conn| {
@@ -165,6 +165,19 @@ impl Database {
             diesel::result::QueryResult::Ok(())
         })?;
 
+        Ok(id)
+    }
+
+    pub fn add_job(&mut self) -> Result<Uuid, failure::Error> {
+        let id = Uuid::new_v4();
+        insert_into(job::table)
+            .values(Job {
+                id,
+                enqueued_at: Utc::now().naive_utc(),
+                completed_at: None,
+                has_error: false,
+            })
+            .execute(&mut self.conn)?;
         Ok(id)
     }
 

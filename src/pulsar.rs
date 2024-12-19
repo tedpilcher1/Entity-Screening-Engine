@@ -131,24 +131,23 @@ impl PulsarProducer {
         // if max jobs per check reached, gracefully terminate
         // TODO: this is a bit inefficient was we are executing sql query each
         // time we enqueue rather than per job, but fine for now
-        let job_id: Uuid;
-        
         if let Some(rate_limiter) = &self.rate_limiter {
             rate_limiter.until_ready().await;
         }
 
-        if let Some(check_id) = check_id {
-            if let Some(max_jobs) = self.max_jobs_per_check {
-                if database.get_num_of_jobs(&check_id)? >= max_jobs {
-                    println!("Check with ID: {:?} reached job limit", check_id);
-                    info!("Check with ID: {:?} reached job limit", check_id);
-                    return Ok(());
+        let job_id = match check_id {
+            Some(check_id) => {
+                if let Some(max_jobs) = self.max_jobs_per_check {
+                    if database.get_num_of_jobs(&check_id)? >= max_jobs {
+                        println!("Check with ID: {:?} reached job limit", check_id);
+                        info!("Check with ID: {:?} reached job limit", check_id);
+                        return Ok(());
+                    }
                 }
+                database.add_job_with_check(check_id)?
             }
-            job_id = database.add_job(check_id)?;
-        } else {
-            job_id = Uuid::new_v4();
-        }
+            None => database.add_job()?,
+        };
 
         self.produce_message(Job {
             id: job_id,
