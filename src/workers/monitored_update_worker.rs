@@ -16,7 +16,7 @@ const SUB: &str = "monitored-update-sub";
 const SUB_TYPE: SubType = SubType::Shared;
 
 pub struct MonitoredUpdateWorker {
-    database: Database,
+    pub database: Database,
 }
 
 impl MonitoredUpdateWorker {
@@ -41,7 +41,7 @@ impl MonitoredUpdateWorker {
 impl Work for MonitoredUpdateWorker {
     async fn work(&mut self, job: Job) -> Result<(), failure::Error> {
         let job_result = match job.job_kind {
-            JobKind::StreamingUpdateJob(update_job) => update_job.do_job(),
+            JobKind::StreamingUpdateJob(update_job) => update_job.do_job(self),
             _ => unimplemented!(),
         };
 

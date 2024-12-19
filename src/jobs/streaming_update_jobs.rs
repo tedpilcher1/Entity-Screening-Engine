@@ -1,8 +1,10 @@
 use serde::{Deserialize, Serialize};
 use uuid::Uuid;
 
-use crate::company_house::company_house_streaming_types::{
-    CompanyData, CompanyStreamingResponse, Event,
+use crate::{
+    company_house::company_house_streaming_types::{CompanyData, Event},
+    models::Entity,
+    workers::monitored_update_worker::MonitoredUpdateWorker,
 };
 
 #[derive(Serialize, Deserialize, Debug)]
@@ -19,49 +21,39 @@ pub enum UpdateKind {
 }
 
 impl StreamingUpdateJob {
-    pub fn do_job(&self) -> Result<(), failure::Error> {
-        // first check if entity is monitored, if not stop processing job
+    pub fn do_job(self, worker: &mut MonitoredUpdateWorker) -> Result<(), failure::Error> {
+        let check_ids = self.get_check_ids_monitoring_entity(worker)?;
 
-        // add
-        let entity_id = match &self.kind {
-            UpdateKind::Company(company_streaming_response) => {
-                self.handle_company_update(company_streaming_response)?
-            }
-            UpdateKind::Officer => unimplemented!(),
-            UpdateKind::Shareholder => unimplemented!(),
+        if check_ids.len() > 0 {
+            let entity: Entity = match self.kind {
+                UpdateKind::Company(company_data) => company_data.into(),
+                UpdateKind::Officer => todo!(),
+                UpdateKind::Shareholder => todo!(),
+            };
+
+            worker.database.insert_entity_snapshot(&entity, check_ids)?;
+        }
+
+        worker
+            .database
+            .insert_processed_update(self.event.timepoint)?;
+
+        // TODO: create message on notification topic
+
+        Ok(())
+    }
+
+    fn get_check_ids_monitoring_entity(
+        &self,
+        worker: &mut MonitoredUpdateWorker,
+    ) -> Result<Vec<Uuid>, failure::Error> {
+        let company_house_id = match &self.kind {
+            UpdateKind::Company(company_data) => &company_data.company_number,
+            UpdateKind::Officer => todo!(),
+            UpdateKind::Shareholder => todo!(),
         };
-
-        // once update successfully handled, insert new snapshot row (timstamp, entity_id)
-
-        Ok(())
-    }
-
-    fn handle_company_update(
-        &self,
-        company_streaming_response: &CompanyData,
-    ) -> Result<Uuid, failure::Error> {
-        // store in db information we care about
-
-        // update latest timestamp
-        // Need to be careful about this, could cause locking contention
-        //  if multiple workers are all trying to update same row
-
-        // produce message
-
-        unimplemented!()
-    }
-
-    fn handle_officer_update(
-        &self,
-        company_streaming_response: &CompanyStreamingResponse,
-    ) -> Result<(), failure::Error> {
-        Ok(())
-    }
-
-    fn handle_shareholder_update(
-        &self,
-        company_streaming_response: &CompanyStreamingResponse,
-    ) -> Result<(), failure::Error> {
-        Ok(())
+        worker
+            .database
+            .get_monitored_entity_check_ids(company_house_id)
     }
 }
