@@ -1,9 +1,5 @@
-use std::io::Read;
-
 use bytes::Bytes;
-use futures::{future, io::BufReader, sink::Buffer, StreamExt};
-use reqwest::Error;
-use tokio_util::io::StreamReader;
+use futures::StreamExt;
 
 use crate::{
     company_house::{
@@ -50,37 +46,6 @@ impl StreamingWorker {
         })
     }
 
-    fn process_chunk(&self, buffer: &Vec<&[u8]>, worker_kind: &StreamingWorkerKind) -> Result<(), failure::Error> {
-
-        let chunk = buffer.concat();
-        
-        match worker_kind {
-            StreamingWorkerKind::Company => {
-                let company_streaming_response: CompanyStreamingResponse =
-                serde_json::from_slice(&chunk)?;
-                // println!("{:?}", company_streaming_response)
-            }
-            StreamingWorkerKind::Officer => unimplemented!(),
-            StreamingWorkerKind::Shareholder => unimplemented!(),
-        }
-
-        Ok(())
-    }
-
-    fn process_bytes(&self, bytes: String, buffer: &mut Vec<&str>) -> Result<(), failure::Error> {
-
-        let split_bytes: Vec<&str> = bytes.split_inclusive('\n').collect();
-
-        for bytes in split_bytes {
-            // buffer.push(bytes);
-            if bytes.starts_with("b") {
-                println!("Starts with b: {:?}", bytes)
-            }
-        }
-
-        Ok(())
-    }
-
     // TODO: handle reconnection when disconnected
     pub async fn do_work(&self) -> Result<(), failure::Error> {
         let mut stream = match self.kind {
@@ -94,32 +59,51 @@ impl StreamingWorker {
         let mut buffer: Vec<Vec<u8>> = Vec::new();
         while let Some(bytes_result) = stream.next().await {
             if let Ok(bytes) = bytes_result {
-                let chunks: Vec<&[u8]> = bytes.split_inclusive(|byte| byte == &b'\n').collect();
-                for chunk in chunks {
-
-                    // skip heartbeat 
-                    if chunk == &[10] {
-                        println!("Skipping heartbeat");
-                        continue;
-                    }
-
-                    let owned_chunk = chunk.to_owned();
-                    buffer.push(owned_chunk);
-                    if chunk.ends_with(&[10]) {
-                        let completed_chunk = buffer.concat();
-                        match serde_json::from_slice::<CompanyStreamingResponse>(&completed_chunk) {
-                            Ok(company_streaming_response) => {
-                                println!("{:?}", company_streaming_response)
-                            },
-                            Err(e) => {
-                                println!("Failed to convert chunk into response, error: {:?}", e);
-                            },
-                        }
-                        buffer.clear();
-                    }
-                }
+                self.process_bytes(bytes, &mut buffer);
             }
         }
+
+        Ok(())
+    }
+
+    fn process_bytes(&self, bytes: Bytes, buffer: &mut Vec<Vec<u8>>) {
+        let chunks: Vec<&[u8]> = bytes.split_inclusive(|byte| byte == &b'\n').collect();
+        for chunk in chunks {
+            // skip heartbeat
+            if chunk == &[10] {
+                println!("Skipping heartbeat");
+                continue;
+            }
+
+            let owned_chunk = chunk.to_owned();
+            buffer.push(owned_chunk);
+            if chunk.ends_with(&[10]) {
+                let completed_chunk = buffer.concat();
+
+                match self.kind {
+                    StreamingWorkerKind::Company => unimplemented!(),
+                    StreamingWorkerKind::Officer => unimplemented!(),
+                    StreamingWorkerKind::Shareholder => unimplemented!(),
+                }
+
+                match serde_json::from_slice::<CompanyStreamingResponse>(&completed_chunk) {
+                    Ok(company_streaming_response) => {
+                        println!("{:?}", company_streaming_response)
+                    }
+                    Err(e) => {
+                        println!("Failed to convert chunk into response, error: {:?}", e);
+                    }
+                }
+                buffer.clear();
+            }
+        }
+    }
+
+    fn process_company_update(&self, chunk: Vec<u8>) -> Result<(), failure::Error> {
+        let company_streaming_response =
+            serde_json::from_slice::<CompanyStreamingResponse>(&chunk)?;
+        
+        self.update_event_producer.enqueue_job(&mut self.database, check_id, job_kind)
 
         Ok(())
     }
