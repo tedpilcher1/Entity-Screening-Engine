@@ -40,7 +40,7 @@ pub struct CompanyData {
     pub service_address: Option<Address>,
     pub sic_codes: Option<Vec<String>>,
     pub subtype: Option<String>,
-    pub super_secure_managing_officer_count: Option<i64>,
+    // pub super_secure_managing_officer_count: Option<i64>,
     pub r#type: Option<String>,
     pub undeliverable_registered_office_address: Option<bool>,
 }
@@ -57,8 +57,8 @@ pub struct Accounts {
 
 #[derive(Debug, Serialize, Deserialize, Clone)]
 pub struct AccountingReferenceDate {
-    pub day: Option<i64>,
-    pub month: Option<i64>,
+    // pub day: Option<i64>,
+    // pub month: Option<i64>,
 }
 
 #[derive(Debug, Serialize, Deserialize, Clone)]
@@ -134,13 +134,13 @@ pub struct ForeignCompanyAccounts {
 
 #[derive(Debug, Serialize, Deserialize, Clone)]
 pub struct AccountPeriod {
-    pub day: Option<i64>,
-    pub month: Option<i64>,
+    // pub day: Option<i64>,
+    // pub month: Option<i64>,
 }
 
 #[derive(Debug, Serialize, Deserialize, Clone)]
 pub struct MustFileWithin {
-    pub months: Option<i64>,
+    // pub months: Option<i64>,
 }
 
 #[derive(Debug, Serialize, Deserialize, Clone)]
@@ -188,6 +188,6 @@ pub struct Address {
 pub struct Event {
     pub fields_changed: Option<Vec<String>>,
     pub published_at: Option<String>,
-    pub timepoint: Option<i64>,
+    // pub timepoint: Option<i64>,
     pub r#type: Option<String>,
 }
