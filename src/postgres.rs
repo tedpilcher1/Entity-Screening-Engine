@@ -503,26 +503,28 @@ impl Database {
     pub fn insert_entity_snapshot(
         &mut self,
         entity: &Entity,
-        check_id: Uuid,
+        check_ids: Vec<Uuid>,
     ) -> Result<(), failure::Error> {
-        let entity_id = self.insert_entity(entity, check_id)?;
         let snapshot_id = Uuid::new_v4();
 
         self.conn.transaction(|conn| {
+            insert_into(entity::table).values(entity).execute(conn)?;
             insert_into(snapshot::table)
                 .values(Snapshot {
                     id: snapshot_id,
                     recieved_at: Utc::now().date_naive(),
-                    entity_id,
+                    entity_id: entity.id,
                 })
                 .execute(conn)?;
 
-            insert_into(check_snapshot::table)
-                .values(CheckSnapshot {
-                    check_id,
-                    snapshot_id,
-                })
-                .execute(conn)?;
+            for check_id in check_ids {
+                insert_into(check_snapshot::table)
+                    .values(CheckSnapshot {
+                        check_id,
+                        snapshot_id,
+                    })
+                    .execute(conn)?;
+            }
 
             diesel::result::QueryResult::Ok(())
         })?;
@@ -547,5 +549,19 @@ impl Database {
             .order_by(processed_update::processed_at.desc())
             .select(processed_update::timepoint)
             .first::<i32>(&mut self.conn)?)
+    }
+
+    pub fn get_monitored_entity_check_ids(
+        &mut self,
+        company_house_id: &String,
+    ) -> Result<Vec<Uuid>, failure::Error> {
+        Ok(check_monitored_entity::table
+            .inner_join(
+                monitored_entity::table
+                    .on(monitored_entity::id.eq(check_monitored_entity::monitored_entity_id)),
+            )
+            .filter(monitored_entity::company_house_id.eq(company_house_id))
+            .select(check_monitored_entity::check_id)
+            .load::<Uuid>(&mut self.conn)?)
     }
 }
