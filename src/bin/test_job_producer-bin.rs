@@ -49,7 +49,7 @@ async fn simulate_find_shareholders_endpoint() {
     });
 
     producer
-        .enqueue_job(&mut conn, check_id, job_kind)
+        .enqueue_job(&mut conn, Some(check_id), job_kind)
         .await
         .unwrap();
 
@@ -63,7 +63,7 @@ async fn simulate_find_shareholders_endpoint() {
     });
 
     producer
-        .enqueue_job(&mut conn, check_id, job_kind)
+        .enqueue_job(&mut conn, Some(check_id), job_kind)
         .await
         .unwrap();
 
@@ -77,7 +77,7 @@ async fn simulate_find_shareholders_endpoint() {
     });
 
     producer
-        .enqueue_job(&mut conn, check_id, job_kind)
+        .enqueue_job(&mut conn, Some(check_id), job_kind)
         .await
         .unwrap();
 }

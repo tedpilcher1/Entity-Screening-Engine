@@ -130,7 +130,7 @@ async fn start_check(company_house_number: String, depth: usize) -> Result<Uuid,
         producer
             .enqueue_job(
                 &mut database,
-                check_id,
+                Some(check_id),
                 JobKind::RelationJob(RelationJob {
                     child_id: entity_id,
                     check_id,
@@ -145,7 +145,7 @@ async fn start_check(company_house_number: String, depth: usize) -> Result<Uuid,
         producer
             .enqueue_job(
                 &mut database,
-                check_id,
+                Some(check_id),
                 JobKind::RelationJob(RelationJob {
                     child_id: entity_id,
                     check_id,

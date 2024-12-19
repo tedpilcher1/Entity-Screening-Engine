@@ -127,7 +127,7 @@ impl RelationJob {
 
                     worker
                         .entity_relation_producer
-                        .enqueue_job(&mut worker.database, self.check_id, job_kind)
+                        .enqueue_job(&mut worker.database, Some(self.check_id), job_kind)
                         .await?;
                 }
                 if self.remaining_depth > 0 {
@@ -142,7 +142,7 @@ impl RelationJob {
 
                     worker
                         .entity_relation_producer
-                        .enqueue_job(&mut worker.database, self.check_id, job_kind)
+                        .enqueue_job(&mut worker.database, Some(self.check_id), job_kind)
                         .await?;
                 }
 
@@ -155,7 +155,7 @@ impl RelationJob {
 
                 worker
                     .risk_producer
-                    .enqueue_job(&mut worker.database, self.check_id, dormany_job)
+                    .enqueue_job(&mut worker.database, Some(self.check_id), dormany_job)
                     .await?;
             }
             Entitykind::Individual => {
@@ -171,7 +171,7 @@ impl RelationJob {
 
                     worker
                         .entity_relation_producer
-                        .enqueue_job(&mut worker.database, self.check_id, appointment_job)
+                        .enqueue_job(&mut worker.database, Some(self.check_id), appointment_job)
                         .await?;
                 }
 
@@ -184,7 +184,7 @@ impl RelationJob {
 
                 worker
                     .risk_producer
-                    .enqueue_job(&mut worker.database, self.check_id, flag_job)
+                    .enqueue_job(&mut worker.database, Some(self.check_id), flag_job)
                     .await?;
 
                 let outlier_age_job = JobKind::RiskJob(RiskJob {
@@ -195,7 +195,7 @@ impl RelationJob {
                 });
                 worker
                     .risk_producer
-                    .enqueue_job(&mut worker.database, self.check_id, outlier_age_job)
+                    .enqueue_job(&mut worker.database, Some(self.check_id), outlier_age_job)
                     .await?;
             }
         }
