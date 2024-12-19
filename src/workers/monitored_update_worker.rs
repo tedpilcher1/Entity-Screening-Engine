@@ -6,7 +6,9 @@ use crate::{
 };
 
 use super::{
-    streaming_worker::COMPANY_STREAMING_TOPIC,
+    streaming_worker::{
+        COMPANY_STREAMING_TOPIC, OFFICER_STREAMING_TOPIC, SHAREHOLDER_STREAMING_TOPIC,
+    },
     worker::{Work, Worker},
 };
 
@@ -23,7 +25,11 @@ impl MonitoredUpdateWorker {
             database: Database::connect()?,
         };
         Ok(Worker::new(
-            COMPANY_STREAMING_TOPIC,
+            vec![
+                COMPANY_STREAMING_TOPIC,
+                OFFICER_STREAMING_TOPIC,
+                SHAREHOLDER_STREAMING_TOPIC,
+            ],
             SUB,
             SUB_TYPE,
             monitored_update_worker,

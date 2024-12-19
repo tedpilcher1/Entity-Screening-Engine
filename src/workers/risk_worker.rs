@@ -26,7 +26,7 @@ impl RiskWorker {
             open_sanctions_client: OpenSanctionsClient::new(),
             company_house_client: CompanyHouseClient::new(),
         };
-        Ok(Worker::new(RISK_TOPIC, SUBSCRIPTION, SUB_TYPE, risk_worker).await?)
+        Ok(Worker::new(vec![RISK_TOPIC], SUBSCRIPTION, SUB_TYPE, risk_worker).await?)
     }
 }
 

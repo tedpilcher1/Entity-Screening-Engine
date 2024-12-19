@@ -42,7 +42,7 @@ impl EntityRelationWorker {
             risk_producer: pulsar_client.create_producer(RISK_TOPIC, None, None).await,
         };
         Ok(Worker::new(
-            ENTITY_RELATION_TOPIC,
+            vec![ENTITY_RELATION_TOPIC],
             SUBSCRIPTION,
             SUB_TYPE,
             entity_relation_worker,

@@ -21,7 +21,7 @@ pub struct Worker<T: Work> {
 
 impl<T: Work> Worker<T> {
     pub async fn new(
-        topic: &str,
+        topics: Vec<&str>,
         sub: &str,
         sub_type: SubType,
         internal_worker: T,
@@ -29,7 +29,7 @@ impl<T: Work> Worker<T> {
         let pulsar_client = PulsarClient::new().await;
 
         Ok(Self {
-            consumer: pulsar_client.create_consumer(topic, sub_type, sub).await,
+            consumer: pulsar_client.create_consumer(topics, sub_type, sub).await,
             internal_worker,
         })
     }

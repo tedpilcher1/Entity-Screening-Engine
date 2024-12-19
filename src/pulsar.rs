@@ -82,7 +82,7 @@ impl PulsarClient {
 
     pub async fn create_consumer(
         &self,
-        topic: &str,
+        topics: Vec<&str>,
         subscription_type: SubType,
         subscription: &str,
     ) -> PulsarConsumer {
@@ -92,14 +92,15 @@ impl PulsarClient {
             internal_consumer: self
                 .internal_client
                 .consumer()
-                .with_topic(topic)
+                // .with_topic(topic)
                 .with_consumer_name("CONSUMER_".to_owned() + &id.to_string())
                 .with_subscription_type(subscription_type) // exclusive for current testing
                 // .with_subscription("SUB_".to_owned() + &id.to_string())
                 .with_subscription(subscription)
+                .with_topics(topics)
                 .with_dead_letter_policy(DeadLetterPolicy {
                     max_redeliver_count: MAX_JOB_RETRY,
-                    dead_letter_topic: format!("{}-DLQ", topic),
+                    dead_letter_topic: "DLQ".to_string(),
                 })
                 .build()
                 .await
