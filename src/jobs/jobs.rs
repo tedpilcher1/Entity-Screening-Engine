@@ -4,7 +4,7 @@ use uuid::Uuid;
 
 use crate::jobs::relation_jobs::RelationJob;
 
-use super::risk_jobs::RiskJob;
+use super::{risk_jobs::RiskJob, streaming_update_jobs::StreamingUpdateJob};
 
 #[derive(Serialize, Deserialize, Debug)]
 pub struct Job {
@@ -34,4 +34,5 @@ impl DeserializeMessage for Job {
 pub enum JobKind {
     RelationJob(RelationJob),
     RiskJob(RiskJob),
+    StreamingUpdateJob(StreamingUpdateJob),
 }
