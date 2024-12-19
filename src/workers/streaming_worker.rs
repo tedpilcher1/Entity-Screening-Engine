@@ -1,5 +1,6 @@
 use bytes::Bytes;
 use futures::StreamExt;
+use log::{info, warn};
 
 use crate::{
     company_house::{
@@ -64,8 +65,11 @@ impl StreamingWorker {
         while let Some(bytes_result) = stream.next().await {
             if let Ok(bytes) = bytes_result {
                 match self.process_bytes(bytes, &mut buffer).await {
-                    Ok(_) => println!("Successfully processed bytes"),
-                    Err(e) => println!("Failed to process bytes, error: {:?}", e),
+                    Ok(_) => info!("Successfully processed bytes"),
+                    Err(e) => {
+                        warn!("Failed to process bytes, error: {:?}", e);
+                        println!("Failed to process bytes, error: {:?}", e)
+                    },
                 }
             }
         }
