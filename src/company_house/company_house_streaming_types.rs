@@ -16,7 +16,7 @@ pub struct CompanyData {
     pub branch_company_details: Option<BranchCompanyDetails>,
     pub can_file: Option<bool>,
     pub company_name: Option<String>,
-    pub company_number: Option<String>,
+    pub company_number: String,
     pub company_status: Option<String>,
     pub company_status_detail: Option<String>,
     pub confirmation_statement: Option<ConfirmationStatement>,
@@ -188,6 +188,6 @@ pub struct Address {
 pub struct Event {
     pub fields_changed: Option<Vec<String>>,
     pub published_at: Option<String>,
-    // pub timepoint: Option<i64>,
+    pub timepoint: i32,
     pub r#type: Option<String>,
 }
