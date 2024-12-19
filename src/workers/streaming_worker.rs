@@ -24,42 +24,37 @@ pub struct StreamingWorker {
     database: Database,
     update_event_producer: PulsarProducer,
     streaming_client: CompanyHouseStreamingClient,
-    kind: StreamingWorkerKind,
+    kind: StreamingKind,
 }
 
-pub enum StreamingWorkerKind {
+#[derive(Clone)]
+pub enum StreamingKind {
     Company,
     Officer,
     Shareholder,
 }
 
 impl StreamingWorker {
-    pub async fn new(kind: StreamingWorkerKind) -> Result<Self, failure::Error> {
+    pub async fn new(kind: StreamingKind) -> Result<Self, failure::Error> {
         let pulsar_client = PulsarClient::new().await;
 
         let topic = match kind {
-            StreamingWorkerKind::Company => COMPANY_STREAMING_TOPIC,
-            StreamingWorkerKind::Officer => OFFICER_STREAMING_TOPIC,
-            StreamingWorkerKind::Shareholder => SHAREHOLDER_STREAMING_TOPIC,
+            StreamingKind::Company => COMPANY_STREAMING_TOPIC,
+            StreamingKind::Officer => OFFICER_STREAMING_TOPIC,
+            StreamingKind::Shareholder => SHAREHOLDER_STREAMING_TOPIC,
         };
 
         Ok(Self {
             database: Database::connect()?,
             update_event_producer: pulsar_client.create_producer(topic, None, None).await,
-            streaming_client: CompanyHouseStreamingClient::new(),
+            streaming_client: CompanyHouseStreamingClient::new(kind.clone()),
             kind,
         })
     }
 
     // TODO: handle reconnection when disconnected
     pub async fn do_work(&mut self) -> Result<(), failure::Error> {
-        let mut stream = match self.kind {
-            StreamingWorkerKind::Company => {
-                self.streaming_client.connect_to_company_stream().await?
-            }
-            StreamingWorkerKind::Officer => unimplemented!(),
-            StreamingWorkerKind::Shareholder => unimplemented!(),
-        };
+        let mut stream = self.streaming_client.connect_to_stream().await?;
 
         let mut buffer: Vec<Vec<u8>> = Vec::new();
         while let Some(bytes_result) = stream.next().await {
@@ -102,7 +97,7 @@ impl StreamingWorker {
 
     async fn process_chunk(&mut self, chunk: Vec<u8>) -> Result<(), failure::Error> {
         let update = match self.kind {
-            StreamingWorkerKind::Company => {
+            StreamingKind::Company => {
                 let streaming_response: CompanyStreamingResponse = serde_json::from_slice(&chunk)?;
 
                 match (streaming_response.data, streaming_response.event) {
@@ -110,8 +105,8 @@ impl StreamingWorker {
                     _ => None,
                 }
             }
-            StreamingWorkerKind::Officer => unimplemented!(),
-            StreamingWorkerKind::Shareholder => unimplemented!(),
+            StreamingKind::Officer => unimplemented!(),
+            StreamingKind::Shareholder => unimplemented!(),
         };
 
         if let Some((kind, event)) = update {

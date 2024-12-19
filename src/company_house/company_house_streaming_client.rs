@@ -5,7 +5,12 @@ use futures::Stream;
 use lazy_static::lazy_static;
 use reqwest::{header, Client};
 
+use crate::workers::streaming_worker::StreamingKind;
+
 const COMPANY_STREAMING_URL: &str = "https://stream.companieshouse.gov.uk/companies";
+const OFFICER_STREAMING_URL: &str = "https://stream.companieshouse.gov.uk/officers";
+const SHAREHOLDER_STREAMING_URL: &str =
+    "https://stream.companieshouse.gov.uk/persons-with-significant-control";
 
 lazy_static! {
     static ref API_KEY: String =
@@ -14,32 +19,38 @@ lazy_static! {
 
 pub struct CompanyHouseStreamingClient {
     client: Client,
+    kind: StreamingKind,
 }
 
 impl CompanyHouseStreamingClient {
-    pub fn new() -> Self {
+    pub fn new(kind: StreamingKind) -> Self {
         Self {
             client: Client::new(),
+            kind,
         }
     }
 
-    pub async fn connect_to_company_stream(
+    pub async fn connect_to_stream(
         &self,
     ) -> Result<impl Stream<Item = Result<Bytes, reqwest::Error>>, failure::Error> {
+        let url = match self.kind {
+            StreamingKind::Company => COMPANY_STREAMING_URL,
+            StreamingKind::Officer => OFFICER_STREAMING_URL,
+            StreamingKind::Shareholder => SHAREHOLDER_STREAMING_URL,
+        };
+
         let mut headers = header::HeaderMap::new();
         headers.insert(
             "Authorization",
             header::HeaderValue::from_str(&format!("{}", API_KEY.as_str()))?,
         );
 
-        let stream = self
+        Ok(self
             .client
-            .get(COMPANY_STREAMING_URL)
+            .get(url)
             .headers(headers)
             .send()
             .await?
-            .bytes_stream();
-
-        Ok(stream)
+            .bytes_stream())
     }
 }
