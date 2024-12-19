@@ -10,6 +10,7 @@ use serde::{Deserialize, Serialize};
 use std::io::Write;
 use uuid::Uuid;
 
+use crate::company_house::company_house_streaming_types::CompanyData;
 use crate::company_house::company_house_types::{
     AppointmentListItem, AppointmentsResponse, CompanyItem, Identification, OfficerListItem,
     OfficerListResponse, ShareholderList, ShareholderListItem,
@@ -138,6 +139,27 @@ impl Entity {
             is_root: true,
             company_house_number,
             ..Default::default()
+        }
+    }
+}
+
+impl From<CompanyData> for Entity {
+    fn from(company_data: CompanyData) -> Self {
+        let (country, postal_code) = match company_data.registered_office_address {
+            Some(officer_address) => (officer_address.country, officer_address.postal_code),
+            None => (None, None),
+        };
+
+        Self {
+            id: Uuid::new_v4(),
+            company_house_number: company_data.company_number,
+            name: company_data.company_name,
+            kind: Entitykind::Company,
+            country,
+            postal_code,
+            date_of_origin: company_data.date_of_creation,
+            is_root: false,
+            officer_id: None,
         }
     }
 }
