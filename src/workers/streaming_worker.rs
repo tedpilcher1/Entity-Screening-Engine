@@ -69,7 +69,7 @@ impl StreamingWorker {
                     Err(e) => {
                         warn!("Failed to process bytes, error: {:?}", e);
                         println!("Failed to process bytes, error: {:?}", e)
-                    },
+                    }
                 }
             }
         }
