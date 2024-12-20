@@ -115,7 +115,7 @@ impl StreamingWorker {
                     (Some(data), Some(event)) => Some((UpdateKind::Officer(data), event)),
                     _ => None,
                 }
-            },
+            }
             StreamingKind::Shareholder => unimplemented!(),
         };
 

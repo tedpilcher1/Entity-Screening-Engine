@@ -112,7 +112,17 @@ fn get_entity_response(check_id: Uuid) -> Result<EntityCheckResponse, failure::E
     })
 }
 
-async fn start_check(company_house_number: String, depth: usize) -> Result<Uuid, failure::Error> {
+fn start_monitoring_check(company_house_number: String) -> Result<Uuid, failure::Error> {
+    let mut database = Database::connect()?;
+    let check_id = database.insert_check(Checkkind::MonitoredEntity)?;
+    database.start_monitoring(check_id, company_house_number)?;
+    Ok(check_id)
+}
+
+async fn start_relations_check(
+    company_house_number: String,
+    depth: usize,
+) -> Result<Uuid, failure::Error> {
     let mut database = Database::connect()?;
     let pulsar_client = PulsarClient::new().await;
     let mut producer = pulsar_client
@@ -214,7 +224,7 @@ async fn start_check_endpoint(
         None => (0,),
     };
 
-    match start_check(company_house_number.clone(), depth.0).await {
+    match start_relations_check(company_house_number.clone(), depth.0).await {
         Ok(check_id) => HttpResponse::Ok().json(check_id),
         Err(e) => {
             warn!("Failed to get relations: {}", e);
@@ -250,6 +260,21 @@ async fn get_checks_endpoint() -> impl Responder {
     }
 }
 
+#[post("/start_monitoring_company_endpoint/{company_house_number}")]
+async fn start_monitoring_company_endpoint(path: web::Path<String>) -> impl Responder {
+    let company_house_number = path.into_inner();
+    match start_monitoring_check(company_house_number.clone()) {
+        Ok(check_id) => HttpResponse::Ok().json(check_id),
+        Err(e) => {
+            warn!("Failed to start monitoring company: {}", e);
+            HttpResponse::InternalServerError().json(format!(
+                "Failed to start monitoring company with numer: {}",
+                company_house_number
+            ))
+        }
+    }
+}
+
 #[actix_web::main]
 async fn main() -> std::io::Result<()> {
     dotenv().ok();
@@ -265,6 +290,7 @@ async fn main() -> std::io::Result<()> {
             .service(start_check_endpoint)
             .service(get_check_endpoint)
             .service(get_checks_endpoint)
+            .service(start_monitoring_company_endpoint)
     })
     .bind("127.0.0.1:8080")?
     .run()
