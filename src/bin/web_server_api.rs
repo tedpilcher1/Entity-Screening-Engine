@@ -13,7 +13,7 @@ use Company_Investigation::{
         jobs::JobKind,
         relation_jobs::{RelationJob, RelationJobKind},
     },
-    models::{Checkkind, Entity, Flagkind, Relationshipkind},
+    models::{Checkkind, Entity, Flagkind, Relationshipkind, Updatekind},
     postgres::Database,
     pulsar::PulsarClient,
     workers::entity_relation_worker::ENTITY_RELATION_TOPIC,
@@ -36,6 +36,21 @@ struct CheckInfo {
 struct ChecksResponse {
     checks: Vec<CheckInfo>,
     has_error: bool,
+}
+
+#[derive(Serialize, Deserialize)]
+struct MonitoredEntityResponse {
+    check_id: Uuid,
+    company_house_id: String,
+    entity_kind: Updatekind,
+    update_last_recieved_at: Option<NaiveDateTime>,
+    monitoring_started_at: NaiveDateTime,
+    monitoring_ended_at: Option<NaiveDateTime>,
+}
+
+#[derive(Serialize, Deserialize)]
+struct MonitoredEntitiesResponse {
+    entities: Vec<MonitoredEntityResponse>,
 }
 
 #[derive(Deserialize)]
@@ -212,6 +227,28 @@ fn get_checks() -> Result<ChecksResponse, failure::Error> {
     })
 }
 
+fn get_monitored_entities() -> Result<Vec<MonitoredEntityResponse>, failure::Error> {
+    let mut database = Database::connect().expect("Should be able to connect to db");
+    let monitored_entities = database.get_monitored_entities()?;
+    let mut monitored_entities_response: Vec<MonitoredEntityResponse> = Vec::new();
+
+    for entity in monitored_entities {
+        let monitoring_span = database.get_monitoring_span(entity.monitoring_span_id)?;
+        let entity_response = MonitoredEntityResponse {
+            check_id: database.get_check_id(entity.id)?,
+            company_house_id: entity.company_house_id,
+            entity_kind: Updatekind::Company, // TODO
+            update_last_recieved_at: database.get_last_update(entity.id)?,
+            monitoring_started_at: monitoring_span.started_at,
+            monitoring_ended_at: monitoring_span.ended_at,
+        };
+
+        monitored_entities_response.push(entity_response);
+    }
+
+    Ok(monitored_entities_response)
+}
+
 #[post("/start_check/{company_house_number}")]
 async fn start_check_endpoint(
     path: web::Path<String>,
@@ -275,6 +312,19 @@ async fn start_monitoring_company_endpoint(path: web::Path<String>) -> impl Resp
     }
 }
 
+#[get("/get_monitored_entities")]
+async fn get_monitored_entities_endpoint() -> impl Responder {
+    match get_monitored_entities() {
+        Ok(monitored_entities) => HttpResponse::Ok().json(MonitoredEntitiesResponse {
+            entities: monitored_entities,
+        }),
+        Err(e) => {
+            warn!("Failed to get monitored entities: {}", e);
+            HttpResponse::InternalServerError().json("Failed to get monitored entities")
+        }
+    }
+}
+
 #[actix_web::main]
 async fn main() -> std::io::Result<()> {
     dotenv().ok();
@@ -291,6 +341,7 @@ async fn main() -> std::io::Result<()> {
             .service(get_check_endpoint)
             .service(get_checks_endpoint)
             .service(start_monitoring_company_endpoint)
+            .service(get_monitored_entities_endpoint)
     })
     .bind("127.0.0.1:8080")?
     .run()

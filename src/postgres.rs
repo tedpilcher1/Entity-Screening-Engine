@@ -575,4 +575,35 @@ impl Database {
             .select(check_monitored_entity::check_id)
             .load::<Uuid>(&mut self.conn)?)
     }
+
+    pub fn get_monitored_entities(&mut self) -> Result<Vec<MonitoredEntity>, failure::Error> {
+        Ok(monitored_entity::table
+            .select(monitored_entity::all_columns)
+            .load::<MonitoredEntity>(&mut self.conn)?)
+    }
+
+    pub fn get_monitoring_span(&mut self, id: Uuid) -> Result<MonitoringSpan, failure::Error> {
+        Ok(monitoring_span::table
+            .filter(monitoring_span::id.eq(id))
+            .first::<MonitoringSpan>(&mut self.conn)?)
+    }
+
+    pub fn get_last_update(
+        &mut self,
+        monitored_entity_id: Uuid,
+    ) -> Result<Option<NaiveDateTime>, failure::Error> {
+        Ok(snapshot::table
+            .filter(snapshot::entity_id.eq(monitored_entity_id))
+            .order_by(snapshot::recieved_at.desc())
+            .select(snapshot::recieved_at)
+            .first::<NaiveDateTime>(&mut self.conn)
+            .optional()?)
+    }
+
+    pub fn get_check_id(&mut self, monitored_entity_id: Uuid) -> Result<Uuid, failure::Error> {
+        Ok(check_monitored_entity::table
+            .filter(check_monitored_entity::monitored_entity_id.eq(monitored_entity_id))
+            .select(check_monitored_entity::check_id)
+            .first::<Uuid>(&mut self.conn)?)
+    }
 }
