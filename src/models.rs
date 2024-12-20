@@ -902,7 +902,7 @@ impl From<&UpdateKind> for Updatekind {
     fn from(update_kind: &UpdateKind) -> Self {
         match update_kind {
             UpdateKind::Company(_) => Self::Company,
-            UpdateKind::Officer => Self::Officer,
+            UpdateKind::Officer(_) => Self::Officer,
             UpdateKind::Shareholder => Self::Shareholder,
         }
     }

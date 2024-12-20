@@ -2,7 +2,7 @@ use serde::{Deserialize, Serialize};
 use uuid::Uuid;
 
 use crate::{
-    company_house::company_house_streaming_types::{CompanyData, Event},
+    company_house::company_house_streaming_types::{CompanyData, Event, OfficerData},
     models::{Entity, Updatekind},
     workers::monitored_update_worker::MonitoredUpdateWorker,
 };
@@ -16,7 +16,7 @@ pub struct StreamingUpdateJob {
 #[derive(Serialize, Deserialize, Debug)]
 pub enum UpdateKind {
     Company(CompanyData),
-    Officer,
+    Officer(OfficerData),
     Shareholder,
 }
 
@@ -28,7 +28,7 @@ impl StreamingUpdateJob {
         if check_ids.len() > 0 {
             let entity: Entity = match self.kind {
                 UpdateKind::Company(company_data) => company_data.into(),
-                UpdateKind::Officer => todo!(),
+                UpdateKind::Officer(officer_data) => todo!(),
                 UpdateKind::Shareholder => todo!(),
             };
 
@@ -50,7 +50,7 @@ impl StreamingUpdateJob {
     ) -> Result<Vec<Uuid>, failure::Error> {
         let company_house_id = match &self.kind {
             UpdateKind::Company(company_data) => &company_data.company_number,
-            UpdateKind::Officer => todo!(),
+            UpdateKind::Officer(officer_data) => todo!(),
             UpdateKind::Shareholder => todo!(),
         };
         worker

@@ -5,7 +5,7 @@ use log::{info, warn};
 use crate::{
     company_house::{
         company_house_streaming_client::CompanyHouseStreamingClient,
-        company_house_streaming_types::CompanyStreamingResponse,
+        company_house_streaming_types::{CompanyStreamingResponse, OfficerStreamingResponse},
     },
     jobs::{
         jobs::JobKind,
@@ -108,7 +108,14 @@ impl StreamingWorker {
                     _ => None,
                 }
             }
-            StreamingKind::Officer => unimplemented!(),
+            StreamingKind::Officer => {
+                let streaming_response: OfficerStreamingResponse = serde_json::from_slice(&chunk)?;
+
+                match (streaming_response.data, streaming_response.event) {
+                    (Some(data), Some(event)) => Some((UpdateKind::Officer(data), event)),
+                    _ => None,
+                }
+            },
             StreamingKind::Shareholder => unimplemented!(),
         };
 
