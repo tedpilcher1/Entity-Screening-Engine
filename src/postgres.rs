@@ -550,11 +550,16 @@ impl Database {
         Ok(())
     }
 
-    pub fn get_last_processed_timepoint(&mut self) -> Result<i32, failure::Error> {
+    pub fn get_last_processed_timepoint(
+        &mut self,
+        kind: Updatekind,
+    ) -> Result<Option<i32>, failure::Error> {
         Ok(processed_update::table
+            .filter(processed_update::kind.eq(kind))
             .order_by(processed_update::processed_at.desc())
             .select(processed_update::timepoint)
-            .first::<i32>(&mut self.conn)?)
+            .first::<i32>(&mut self.conn)
+            .optional()?)
     }
 
     pub fn get_monitored_entity_check_ids(
