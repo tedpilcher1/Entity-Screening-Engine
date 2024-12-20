@@ -1,4 +1,4 @@
-use std::env;
+use std::{collections::HashMap, env};
 
 use bytes::Bytes;
 use futures::Stream;
@@ -32,12 +32,18 @@ impl CompanyHouseStreamingClient {
 
     pub async fn connect_to_stream(
         &self,
+        timepoint: Option<i32>,
     ) -> Result<impl Stream<Item = Result<Bytes, reqwest::Error>>, failure::Error> {
         let url = match self.kind {
             StreamingKind::Company => COMPANY_STREAMING_URL,
             StreamingKind::Officer => OFFICER_STREAMING_URL,
             StreamingKind::Shareholder => SHAREHOLDER_STREAMING_URL,
         };
+
+        let mut params = HashMap::new();
+        if let Some(timepoint) = timepoint {
+            params.insert("timepoint", timepoint);
+        }
 
         let mut headers = header::HeaderMap::new();
         headers.insert(
@@ -49,6 +55,7 @@ impl CompanyHouseStreamingClient {
             .client
             .get(url)
             .headers(headers)
+            .query(&params)
             .send()
             .await?
             .bytes_stream())

@@ -54,7 +54,10 @@ impl StreamingWorker {
 
     // TODO: handle reconnection when disconnected
     pub async fn do_work(&mut self) -> Result<(), failure::Error> {
-        let mut stream = self.streaming_client.connect_to_stream().await?;
+        let timepoint = self
+            .database
+            .get_last_processed_timepoint((&self.kind).into())?;
+        let mut stream = self.streaming_client.connect_to_stream(timepoint).await?;
 
         let mut buffer: Vec<Vec<u8>> = Vec::new();
         while let Some(bytes_result) = stream.next().await {

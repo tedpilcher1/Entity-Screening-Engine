@@ -16,6 +16,7 @@ use crate::company_house::company_house_types::{
     OfficerListResponse, ShareholderList, ShareholderListItem,
 };
 use crate::jobs::streaming_update_jobs::UpdateKind;
+use crate::workers::streaming_worker::StreamingKind;
 
 type CompanyHouseNumber = String;
 
@@ -903,6 +904,16 @@ impl From<&UpdateKind> for Updatekind {
             UpdateKind::Company(_) => Self::Company,
             UpdateKind::Officer => Self::Officer,
             UpdateKind::Shareholder => Self::Shareholder,
+        }
+    }
+}
+
+impl From<&StreamingKind> for Updatekind {
+    fn from(update_kind: &StreamingKind) -> Self {
+        match update_kind {
+            StreamingKind::Company => Self::Company,
+            StreamingKind::Officer => Self::Officer,
+            StreamingKind::Shareholder => Self::Shareholder,
         }
     }
 }
