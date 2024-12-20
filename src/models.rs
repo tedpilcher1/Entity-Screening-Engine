@@ -837,7 +837,7 @@ pub struct MonitoredEntity {
 #[diesel(check_for_backend(diesel::pg::Pg))]
 pub struct Snapshot {
     pub id: Uuid,
-    pub recieved_at: NaiveDate,
+    pub recieved_at: NaiveDateTime,
     pub entity_id: Uuid,
 }
 
@@ -854,7 +854,7 @@ pub struct CheckSnapshot {
 #[diesel(check_for_backend(diesel::pg::Pg))]
 pub struct ProcessedUpdate {
     pub id: Uuid,
-    pub processed_at: NaiveDate,
+    pub processed_at: NaiveDateTime,
     pub timepoint: i32,
     pub kind: Updatekind,
 }
@@ -864,8 +864,8 @@ pub struct ProcessedUpdate {
 #[diesel(check_for_backend(diesel::pg::Pg))]
 pub struct MonitoringSpan {
     pub id: Uuid,
-    pub started_at: NaiveDate,
-    pub ended_at: Option<NaiveDate>,
+    pub started_at: NaiveDateTime,
+    pub ended_at: Option<NaiveDateTime>,
 }
 
 #[derive(Debug, AsExpression, FromSqlRow, Serialize, Deserialize, PartialEq)]

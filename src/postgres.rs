@@ -448,7 +448,7 @@ impl Database {
             insert_into(monitoring_span::table)
                 .values(MonitoringSpan {
                     id: monitoring_span_id,
-                    started_at: Utc::now().date_naive(),
+                    started_at: Utc::now().naive_local(),
                     ended_at: None,
                 })
                 .execute(conn)?;
@@ -492,7 +492,7 @@ impl Database {
 
             update(monitoring_span::table)
                 .filter(monitoring_span::id.eq(monitoring_span_id))
-                .set(monitoring_span::ended_at.eq(Utc::now().date_naive()))
+                .set(monitoring_span::ended_at.eq(Utc::now().naive_local()))
                 .execute(conn)?;
 
             diesel::result::QueryResult::Ok(())
@@ -513,7 +513,7 @@ impl Database {
             insert_into(snapshot::table)
                 .values(Snapshot {
                     id: snapshot_id,
-                    recieved_at: Utc::now().date_naive(),
+                    recieved_at: Utc::now().naive_local(),
                     entity_id: entity.id,
                 })
                 .execute(conn)?;
@@ -541,7 +541,7 @@ impl Database {
         insert_into(processed_update::table)
             .values(ProcessedUpdate {
                 id: Uuid::new_v4(),
-                processed_at: Utc::now().date_naive(),
+                processed_at: Utc::now().naive_local(),
                 timepoint,
                 kind,
             })

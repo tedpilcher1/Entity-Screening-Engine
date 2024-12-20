@@ -136,8 +136,8 @@ diesel::table! {
 diesel::table! {
     monitoring_span (id) {
         id -> Uuid,
-        started_at -> Date,
-        ended_at -> Nullable<Date>,
+        started_at -> Timestamp,
+        ended_at -> Nullable<Timestamp>,
     }
 }
 
@@ -168,9 +168,9 @@ diesel::table! {
 
     processed_update (id) {
         id -> Uuid,
-        processed_at -> Date,
         timepoint -> Int4,
         kind -> Updatekind,
+        processed_at -> Timestamp,
     }
 }
 
@@ -190,8 +190,8 @@ diesel::table! {
 diesel::table! {
     snapshot (id) {
         id -> Uuid,
-        recieved_at -> Date,
         entity_id -> Uuid,
+        recieved_at -> Timestamp,
     }
 }
 
