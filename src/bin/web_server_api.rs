@@ -249,6 +249,11 @@ fn get_monitored_entities() -> Result<Vec<MonitoredEntityResponse>, failure::Err
     Ok(monitored_entities_response)
 }
 
+fn cancel_monitoring_entity(check_id: Uuid) -> Result<(), failure::Error> {
+    let mut database = Database::connect().expect("Should be able to connect to db");
+    database.cancel_monitoring(check_id)
+}
+
 #[post("/start_check/{company_house_number}")]
 async fn start_check_endpoint(
     path: web::Path<String>,
@@ -325,6 +330,18 @@ async fn get_monitored_entities_endpoint() -> impl Responder {
     }
 }
 
+#[post("/cancel_monitoring_entity/{check_id}")]
+async fn cancel_monitoring_entity_endpoint(path: web::Path<Uuid>) -> impl Responder {
+    let check_id = path.into_inner();
+    match cancel_monitoring_entity(check_id) {
+        Ok(_) => HttpResponse::Ok(),
+        Err(_) => {
+            warn!("Failed to cancel monitoring for check id: {:?}", check_id);
+            HttpResponse::InternalServerError()
+        }
+    }
+}
+
 #[actix_web::main]
 async fn main() -> std::io::Result<()> {
     dotenv().ok();
@@ -342,6 +359,8 @@ async fn main() -> std::io::Result<()> {
             .service(get_checks_endpoint)
             .service(start_monitoring_entity_endpoint)
             .service(get_monitored_entities_endpoint)
+            // .service(get_monitored_entity_endpoint)
+            .service(cancel_monitoring_entity_endpoint)
     })
     .bind("127.0.0.1:8080")?
     .run()
