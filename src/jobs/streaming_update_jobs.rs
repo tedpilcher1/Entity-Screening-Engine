@@ -3,7 +3,7 @@ use uuid::Uuid;
 
 use crate::{
     company_house::company_house_streaming_types::{CompanyData, Event},
-    models::Entity,
+    models::{Entity, Updatekind},
     workers::monitored_update_worker::MonitoredUpdateWorker,
 };
 
@@ -23,6 +23,7 @@ pub enum UpdateKind {
 impl StreamingUpdateJob {
     pub fn do_job(self, worker: &mut MonitoredUpdateWorker) -> Result<(), failure::Error> {
         let check_ids = self.get_check_ids_monitoring_entity(worker)?;
+        let update_kind: Updatekind = (&self.kind).into();
 
         if check_ids.len() > 0 {
             let entity: Entity = match self.kind {
@@ -36,7 +37,7 @@ impl StreamingUpdateJob {
 
         worker
             .database
-            .insert_processed_update(self.event.timepoint)?;
+            .insert_processed_update(self.event.timepoint, update_kind)?;
 
         // TODO: create message on notification topic
 

@@ -15,6 +15,7 @@ use crate::company_house::company_house_types::{
     AppointmentListItem, AppointmentsResponse, CompanyItem, Identification, OfficerListItem,
     OfficerListResponse, ShareholderList, ShareholderListItem,
 };
+use crate::jobs::streaming_update_jobs::UpdateKind;
 
 type CompanyHouseNumber = String;
 
@@ -854,6 +855,7 @@ pub struct ProcessedUpdate {
     pub id: Uuid,
     pub processed_at: NaiveDate,
     pub timepoint: i32,
+    pub kind: Updatekind,
 }
 
 #[derive(Queryable, Selectable, Insertable)]
@@ -863,4 +865,44 @@ pub struct MonitoringSpan {
     pub id: Uuid,
     pub started_at: NaiveDate,
     pub ended_at: Option<NaiveDate>,
+}
+
+#[derive(Debug, AsExpression, FromSqlRow, Serialize, Deserialize, PartialEq)]
+#[diesel(sql_type = crate::schema::sql_types::Updatekind)]
+pub enum Updatekind {
+    Company,
+    Officer,
+    Shareholder,
+}
+
+impl ToSql<crate::schema::sql_types::Updatekind, Pg> for Updatekind {
+    fn to_sql<'b>(&'b self, out: &mut Output<'b, '_, Pg>) -> serialize::Result {
+        match *self {
+            Updatekind::Company => out.write_all(b"company")?,
+            Updatekind::Officer => out.write_all(b"officer")?,
+            Updatekind::Shareholder => out.write_all(b"shareholder")?,
+        }
+        Ok(IsNull::No)
+    }
+}
+
+impl FromSql<crate::schema::sql_types::Updatekind, Pg> for Updatekind {
+    fn from_sql(bytes: PgValue) -> deserialize::Result<Self> {
+        match bytes.as_bytes() {
+            b"company" => Ok(Updatekind::Company),
+            b"officer" => Ok(Updatekind::Officer),
+            b"shareholder" => Ok(Updatekind::Shareholder),
+            _ => Err("Unrecognized enum variant".into()),
+        }
+    }
+}
+
+impl From<&UpdateKind> for Updatekind {
+    fn from(update_kind: &UpdateKind) -> Self {
+        match update_kind {
+            UpdateKind::Company(_) => Self::Company,
+            UpdateKind::Officer => Self::Officer,
+            UpdateKind::Shareholder => Self::Shareholder,
+        }
+    }
 }

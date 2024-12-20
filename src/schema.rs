@@ -16,6 +16,10 @@ pub mod sql_types {
     #[derive(diesel::query_builder::QueryId, Clone, diesel::sql_types::SqlType)]
     #[diesel(postgres_type(name = "relationshipkind"))]
     pub struct Relationshipkind;
+
+    #[derive(diesel::query_builder::QueryId, Clone, diesel::sql_types::SqlType)]
+    #[diesel(postgres_type(name = "updatekind"))]
+    pub struct Updatekind;
 }
 
 diesel::table! {
@@ -159,10 +163,14 @@ diesel::table! {
 }
 
 diesel::table! {
+    use diesel::sql_types::*;
+    use super::sql_types::Updatekind;
+
     processed_update (id) {
         id -> Uuid,
         processed_at -> Date,
         timepoint -> Int4,
+        kind -> Updatekind,
     }
 }
 

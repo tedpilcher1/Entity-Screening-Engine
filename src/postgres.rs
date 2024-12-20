@@ -7,6 +7,7 @@ use crate::models::{
     Check, CheckEntityMap, CheckJobMap, CheckMonitoredEntity, CheckSnapshot, Checkkind, Dataset,
     Datasets, DormantCompany, Entity, Flag, Flagkind, Flags, Job, MonitoredEntity, MonitoringSpan,
     OutlierAge, Position, Positions, ProcessedUpdate, Relationship, Relationshipkind, Snapshot,
+    Updatekind,
 };
 use crate::schema::{
     check, check_entity_map, check_job_map, check_monitored_entity, check_snapshot, dataset,
@@ -532,12 +533,17 @@ impl Database {
         Ok(())
     }
 
-    pub fn insert_processed_update(&mut self, timepoint: i32) -> Result<(), failure::Error> {
+    pub fn insert_processed_update(
+        &mut self,
+        timepoint: i32,
+        kind: Updatekind,
+    ) -> Result<(), failure::Error> {
         insert_into(processed_update::table)
             .values(ProcessedUpdate {
                 id: Uuid::new_v4(),
                 processed_at: Utc::now().date_naive(),
                 timepoint,
+                kind,
             })
             .execute(&mut self.conn)?;
 
