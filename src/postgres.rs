@@ -556,7 +556,7 @@ impl Database {
     ) -> Result<Option<i32>, failure::Error> {
         Ok(processed_update::table
             .filter(processed_update::kind.eq(kind))
-            .order_by(processed_update::processed_at.desc())
+            .order_by(processed_update::timepoint.desc())
             .select(processed_update::timepoint)
             .first::<i32>(&mut self.conn)
             .optional()?)
