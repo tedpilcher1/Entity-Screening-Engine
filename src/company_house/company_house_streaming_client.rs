@@ -3,6 +3,7 @@ use std::{collections::HashMap, env};
 use bytes::Bytes;
 use futures::Stream;
 use lazy_static::lazy_static;
+use log::info;
 use reqwest::{header, Client};
 
 use crate::workers::streaming_worker::StreamingKind;
@@ -43,6 +44,8 @@ impl CompanyHouseStreamingClient {
         let mut params = HashMap::new();
         if let Some(timepoint) = timepoint {
             params.insert("timepoint", timepoint);
+            println!("Resuming stream from timepoint: {:?}", timepoint);
+            info!("Resuming stream from timepoint: {:?}", timepoint)
         }
 
         let mut headers = header::HeaderMap::new();
